@@ -1,0 +1,35 @@
+# This is a sample patch
+# Patch files end with [.midipatch]
+# this is a comment! Comments start with a # like in python (space after is not required)
+# lines with comments are actually stripped out instead of parsed, so comments in JSON blocks will not affect results.
+
+# {PATCH NAME} is what shows up in performance mode
+PATCH NAME
+
+# use startconfig to start the configuration of patches
+startconfig
+# everything in here should be of JSON format
+
+{
+    # name is the name of the patch as referred to in the lists, example is the index of patch on Korg Kross 2 (typeof int, required, 0..127)
+    "name": 1,
+    # preset will load in stuff from [userdata]/patches/presets/{given}
+    # remember NO COMMA AT THE END OF THIS LINE (or last json line)
+    "preset": "main_config"
+}
+# use endconfig to end the configuration of patches
+endconfig
+
+# use startlist to create the list of patches
+startlist
+
+{
+    # patches can be given in a string that matches config name, or an int that matches the index of the patch on the Korg Kross 2
+    "list": ["name of patch", 1, "other patch", 2, "another patch", "yet another patch", 4, 125, "last patch"]
+}
+
+# use endlist to end the list of patches
+endlist
+
+
+# startconfig, endconfig, startlist, and endlist are not case sensitive, but it is good practice to keep them lowercase

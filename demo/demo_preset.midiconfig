@@ -1,0 +1,11 @@
+# Demo of .midiconfig
+
+# again, comments are allowed, same usage as Python
+# comments are stripped when parsing, alongside empty lines
+
+# this file pretty much only contains JSON, and should only contain JSON data
+{
+    # preset works in the same way as in the .midiconfig file's presets
+    "keyboard": 1,
+    "synth": 20
+}
