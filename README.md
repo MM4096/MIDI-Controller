@@ -68,3 +68,7 @@ Saves all changes and exits.
 Adds a path to a specific config file. If you named your config file `test` (shows up as `test.midiconfig`), add the value `test` to reference that config. When completed, any value in `test` can be used in your patches.
 
 
+## Stuffs that need doing
+- Selecting a single file does God knows what right now
+- Saving a MIDI port. The functionality is there, but config overwrites every time (to use this feature anyways, go to `json_default.py` and remove the `write_main_json_file()` function (removing the body, not the function itself) after **running the program once**.
+
