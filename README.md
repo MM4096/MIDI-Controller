@@ -8,10 +8,13 @@ To pull this repo, run the following command in the directory of your choosing:
 `git clone https://github.com/MM4096/MIDI-Controller.git`
 To update, run `git pull`.
 
+**NOTE**: I cannot find a way to package this into an executable.
+
 ## Usage
 - Activate the virtual environment given. This is done by using the `source .venv/bin/activate` command in your directory.
 - Run the `main.py` file using `python3 main.py`.
 - Follow the instructions given, or look at the `In Depth Usage section` below.
+- Remember to connect your Kross 2 to your computer via a USB cable!
 
 ## Contributions
 All contributions are welcome, and you are allowed to use this source code to do whatever you feel like doing with it. Keep in mind that this is primarily designed for the Korg Kross 2.
