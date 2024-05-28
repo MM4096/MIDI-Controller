@@ -160,6 +160,7 @@ imports:
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#mido">mido</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#os">os</a>
@@ -181,6 +182,7 @@ imports:
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
  &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#tools">tools</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
@@ -5186,6 +5188,7 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#platformdirs">platformdirs</a>
+ &#8226;   <a href="#posixpath">posixpath</a>
 
   </div>
   <div class="import">
@@ -6594,6 +6597,7 @@ imported by:
  &#8226;   <a href="#mido">mido</a>
  &#8226;   <a href="#mido.backends">mido.backends</a>
  &#8226;   <a href="#mido.backends.backend">mido.backends.backend</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
  &#8226;   <a href="#mido.messages">mido.messages</a>
  &#8226;   <a href="#mido.midifiles">mido.midifiles</a>
  &#8226;   <a href="#mido.parser">mido.parser</a>
@@ -6617,7 +6621,29 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#mido.backends.backend">mido.backends.backend</a>
+    <a href="#mido.backends._parser_queue">mido.backends._parser_queue</a>
+ &#8226;   <a href="#mido.backends.backend">mido.backends.backend</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
+ &#8226;   <a href="#mido.backends.rtmidi_utils">mido.backends.rtmidi_utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="mido.backends._parser_queue"></a>
+  <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/mido/backends/_parser_queue.py" type="text/plain"><tt>mido.backends._parser_queue</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#mido.backends">mido.backends</a>
+ &#8226;   <a href="#mido.parser">mido.parser</a>
+ &#8226;   <a href="#queue">queue</a>
+ &#8226;   <a href="#threading">threading</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
 
   </div>
 
@@ -6644,6 +6670,45 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="mido.backends.rtmidi"></a>
+  <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/mido/backends/rtmidi.py" type="text/plain"><tt>mido.backends.rtmidi</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#mido">mido</a>
+ &#8226;   <a href="#mido.backends">mido.backends</a>
+ &#8226;   <a href="#mido.backends._parser_queue">mido.backends._parser_queue</a>
+ &#8226;   <a href="#mido.backends.rtmidi_utils">mido.backends.rtmidi_utils</a>
+ &#8226;   <a href="#mido.messages">mido.messages</a>
+ &#8226;   <a href="#mido.ports">mido.ports</a>
+ &#8226;   <a href="#rtmidi">rtmidi</a>
+ &#8226;   <a href="#threading">threading</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="mido.backends.rtmidi_utils"></a>
+  <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/mido/backends/rtmidi_utils.py" type="text/plain"><tt>mido.backends.rtmidi_utils</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#mido.backends">mido.backends</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="mido.messages"></a>
   <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/mido/messages/__init__.py" type="text/plain"><tt>mido.messages</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
@@ -6657,6 +6722,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#mido">mido</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
  &#8226;   <a href="#mido.messages.checks">mido.messages.checks</a>
  &#8226;   <a href="#mido.messages.decode">mido.messages.decode</a>
  &#8226;   <a href="#mido.messages.encode">mido.messages.encode</a>
@@ -6908,6 +6974,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#mido">mido</a>
+ &#8226;   <a href="#mido.backends._parser_queue">mido.backends._parser_queue</a>
  &#8226;   <a href="#mido.ports">mido.ports</a>
  &#8226;   <a href="#mido.sockets">mido.sockets</a>
  &#8226;   <a href="#mido.syx">mido.syx</a>
@@ -6933,6 +7000,7 @@ imports:
 imported by:
     <a href="#mido">mido</a>
  &#8226;   <a href="#mido.backends.backend">mido.backends.backend</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
  &#8226;   <a href="#mido.sockets">mido.sockets</a>
 
   </div>
@@ -9229,7 +9297,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#os">os</a>
+    <a href="#file_manager">file_manager</a>
+ &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#pkg_resources">pkg_resources</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#platformdirs.macos">platformdirs.macos</a>
@@ -9372,7 +9441,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#pkg_resources._vendor.more_itertools.more">pkg_resources._vendor.more_itertools.more</a>
+    <a href="#mido.backends._parser_queue">mido.backends._parser_queue</a>
+ &#8226;   <a href="#pkg_resources._vendor.more_itertools.more">pkg_resources._vendor.more_itertools.more</a>
 
   </div>
 
@@ -9645,6 +9715,56 @@ imported by:
   <tt>resource</tt> <span class="moduletype"><tt>/usr/lib/python3.12/lib-dynload/resource.cpython-312-x86_64-linux-gnu.so</tt></span>  <div class="import">
 imported by:
     <a href="#posix">posix</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="rtmidi"></a>
+  <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/rtmidi/__init__.py" type="text/plain"><tt>rtmidi</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#rtmidi._rtmidi">rtmidi._rtmidi</a>
+ &#8226;   <a href="#rtmidi.version">rtmidi.version</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
+ &#8226;   <a href="#rtmidi._rtmidi">rtmidi._rtmidi</a>
+ &#8226;   <a href="#rtmidi.version">rtmidi.version</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="rtmidi._rtmidi"></a>
+  <tt>rtmidi._rtmidi</tt> <span class="moduletype"><tt>/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/rtmidi/_rtmidi.cpython-312-x86_64-linux-gnu.so</tt></span>  <div class="import">
+imports:
+    <a href="#rtmidi">rtmidi</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#rtmidi">rtmidi</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="rtmidi.version"></a>
+  <a target="code" href="/home/coding/dev/repo/midi_project/.venv/lib/python3.12/site-packages/rtmidi/version.py" type="text/plain"><tt>rtmidi.version</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#rtmidi">rtmidi</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#rtmidi">rtmidi</a>
 
   </div>
 
@@ -10067,6 +10187,7 @@ imported by:
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#mimetypes">mimetypes</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#os">os</a>
@@ -10290,6 +10411,8 @@ imported by:
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#mido.backends._parser_queue">mido.backends._parser_queue</a>
+ &#8226;   <a href="#mido.backends.rtmidi">mido.backends.rtmidi</a>
  &#8226;   <a href="#mido.ports">mido.ports</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#subprocess">subprocess</a>

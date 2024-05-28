@@ -1,6 +1,7 @@
 import json
 import subprocess
 import mido
+import mido.backends.rtmidi
 import platformdirs
 import os
 import json_default
@@ -9,6 +10,7 @@ from pick import pick
 from file_manager import *
 import patcher
 import tools
+from sys import exit
 
 # region vars
 selected_port = ""
@@ -285,6 +287,7 @@ def select_file(path: str, maximum_back_path: str = "", allowed_extensions: str 
         os.system("clear")
         this_directory = "/".join(current_path)
         files = get_files_in_folder(this_directory, allowed_extensions)
+        files = [f.split("/")[-1] for f in files]
         folders = [f for f in os.listdir(this_directory) if os.path.isdir(os.path.join(this_directory, f))]
         display_folders = [f"/{f}" for f in folders]
         options = []
