@@ -7,8 +7,8 @@ This project is built with Python, using the `mido` library.
 To pull this repo, run the following command in the directory of your choosing:
 `git clone https://github.com/MM4096/MIDI-Controller.git`
 To update, run `git pull`.
+[INSERT INSTRUCTIONS ON USING THE RELEASES]
 
-**NOTE**: I cannot find a way to package this into an executable.
 
 ## Usage
 - Activate the virtual environment given. This is done by using the `source .venv/bin/activate` command in your directory.
