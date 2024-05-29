@@ -4,16 +4,15 @@ This is a project I started due to a lack of proper resources for creating patch
 This project is built with Python, using the `mido` library.
 
 ## Installation / Pulling this repo
-To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page. Download the latest binary (or go [here](https://github.com/MM4096/MIDI-Controller/releases/latest).
-To run, open a terminal and run the executable from there.
+To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page. Download the latest binary (or go [here](https://github.com/MM4096/MIDI-Controller/releases/latest) for the latest release).
 
 To pull this repo, run the following command in the directory of your choosing:
 `git clone https://github.com/MM4096/MIDI-Controller.git`
 To update, run `git pull`.
 
 ## Usage
-- Activate the virtual environment given. This is done by using the `source .venv/bin/activate` command in your directory.
-- Run the `main.py` file using `python3 main.py`.
+- Open a terminal, and navigate to the directory with your executable in it.
+- Run the executable (`./MIDI-Controller-linux` if you didn't rename the executable). If this doesn't work, you may need to run `chmod +x ./MIDI-Controller-linux` to allow executing as a program.
 - Follow the instructions given, or look at the `In Depth Usage section` below.
 - Remember to connect your Kross 2 to your computer via a USB cable!
 
@@ -74,5 +73,5 @@ Adds a path to a specific config file. If you named your config file `test` (sho
 
 ## Stuffs that need doing
 - Saving a MIDI port. The functionality is there, but config overwrites every time (to use this feature anyways, go to `json_default.py` and remove the `write_main_json_file()` function (removing the body, not the function itself) after **running the program once**.
-- Windows support
+- Windows support - several functions need re-writing.
 
