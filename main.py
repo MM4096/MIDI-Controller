@@ -11,12 +11,26 @@ from file_manager import *
 import patcher
 import tools
 from sys import exit
+from pynput import keyboard
 
 # region vars
 selected_port = ""
 
-
 # endregion
+
+# region input functions
+release_key = keyboard.Key.enter
+
+
+def set_release_key(key: keyboard.Key):
+    global release_key
+    release_key = key
+
+
+def on_release(key):
+    print(key)
+    if key == release_key:
+        return False
 
 
 def set_up_files():
@@ -69,7 +83,7 @@ def port_options():
 
 def open_program_data():
     os.system("clear")
-    options = ["Open patches folder", "Open main folder", "Open config file for editing (requires [gedit])", "Back"]
+    options = ["Open patches folder", "Open MIDI-Controller-linux folder", "Open config file for editing (requires [gedit])", "Back"]
     option, index = pick(options, "What would you like to open?", indicator=">")
     if index == 1:
         os.system(f"nautilus {get_user_data_dir()} &")
@@ -80,6 +94,22 @@ def open_program_data():
         os.system(f"gedit {get_user_data_dir()}/config.json &")
     else:
         return
+
+
+def get_files_in_folder(path: str, filter_extension: str = "") -> list:
+    if not os.path.exists(path):
+        return []
+    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    if filter_extension != "":
+        files = [f"{path}/{f}" for f in files if f.endswith(filter_extension)]
+    return files
+
+
+def get_folders_in_folder(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    directories = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+    return directories
 
 
 def config_updater(previous_config: dict, allow_preset_additions: bool = False) -> dict:
@@ -150,30 +180,66 @@ def config_updater(previous_config: dict, allow_preset_additions: bool = False) 
                     input()
 
 
-def patch_updater(previous_list: dict) -> dict:
-    pass
-
-
 def create_patch():
     patch_list = []
     patch_config = {}
     patch_name = ""
     os.system("clear")
-    path = input("Enter the path to the patch file (type 'CANCEL' to cancel, type 'HELP' for help): \n")
-    if path.lower() == "cancel" or path.lower() == "":
-        return
-    if path.lower() == "help":
-        print("---HELP---\n"
-              "Enter your patch name here. This will be the name of the patch file.\n"
-              "You can also put folders here, so entering {example}/{name} will create the patch file at [appdata]/"
-              "patches/{example}/{name}.midipatch\n"
-              "The .midipatch extension DOES NOT need to be added.\n"
-              "Press [ENTER] to continue")
-        input()
-        create_patch()
-    absolute_path = f"{get_user_data_dir()}/patches/{path}.midipatch"
+    #region previous
+    # path = input("Enter the path to the patch file (type 'CANCEL' to cancel, type 'HELP' for help): \n")
+    # if path.lower() == "cancel" or path.lower() == "":
+    #     return
+    # if path.lower() == "help":
+    #     print("---HELP---\n"
+    #           "Enter your patch name here. This will be the name of the patch file.\n"
+    #           "You can also put folders here, so entering {example}/{name} will create the patch file at [appdata]/"
+    #           "patches/{example}/{name}.midipatch\n"
+    #           "The .midipatch extension DOES NOT need to be added.\n"
+    #           "Press [ENTER] to continue")
+    #     input()
+    #     create_patch()
+    #endregion
+    stop = False
+    current_directory = get_user_data_dir() + "/patches"
+    path = ""
+    while not stop:
+        sections = current_directory.split("/")
+        options = [".."]
+        directories = get_folders_in_folder(current_directory)
+        files = get_files_in_folder(current_directory, ".midipatch")
+        options += [f"/{i}" for i in directories]
+        options += [i.split("/")[-1] for i in files]
+        options += ["Create a New Patch Here", "Cancel"]
+
+        option, index = pick(options, "Select a patch", indicator=">")
+        if index == 0:
+            if not os.path.samefile(current_directory, get_user_data_dir()):
+                sections.pop()
+                current_directory = "/".join(sections)
+        else:
+            index -= 1
+            if index < len(directories):
+                sections.append(directories[index])
+                current_directory = "/".join(sections)
+            else:
+                index -= len(directories)
+                if index < len(files):
+                    selected_file = files[index]
+                    path = f"{selected_file}"
+                    stop = True
+                else:
+                    index -= len(files)
+                    if index == 0:
+                        os.system("clear")
+                        patch_name = input("What would you like to name the new patch?\n")
+                        path = f"{current_directory}/{patch_name}.midipatch"
+                        stop = True
+                    else:
+                        return
+
+    absolute_path = path
     if os.path.exists(absolute_path):
-        options = ["Overwrite", "Cancel"]
+        options = ["Edit", "Cancel"]
         option, index = pick(options, "Patch already exists. Edit patch?", indicator=">")
         if index == 0:
             patch_list = patcher.get_patch_list(absolute_path)
@@ -184,11 +250,16 @@ def create_patch():
     options = ["Update patch list (external editor [gedit])", "Update patch config", "Back"]
     option, index = pick(options, "Select an option", indicator=">")
     if index == 0:
+        available_presets = patcher.get_available_presets(absolute_path)
+        available_presets.pop(0)
+        available_presets[0] = "\n\t# " + available_presets[0]
         file_data = ("# edit patches here. Either [string] (referring to a patch config) or [int] "
                      "(referring to that item) is allowed\n"
-                     "# comments start with [#] \n"
-                     "# Enter the patch name on the next line\n"
-                     f"{path.split("/")[-1]}\n"
+                     "# comments start with [#] \n\n"
+                     "# Enter the patch name on the next line\n\n"
+                     f"{path.split("/")[-1]}\n\n"
+                     f"\t# Here's the usable presets. To add more, edit the [CONFIG] section.\n"
+                     f"{'\n\t# '.join(available_presets)}\n\n"
                      "# Leave the next line the way it currently is\n"
                      "startlist\n"
                      "# start patching here\n")
@@ -201,7 +272,7 @@ def create_patch():
         os.remove(f"{get_user_data_dir()}/temp/patch_list.temp")
         patch_list.clear()
         for line in given_list:
-            removed_spaces = line.replace(" ", "")
+            removed_spaces = line.replace(" ", "").replace("\t", "")
             if removed_spaces == "":
                 pass
             elif removed_spaces[0] == "#":
@@ -229,23 +300,45 @@ def create_patch():
 def create_config():
     os.system("clear")
     config_list = {}
-    # TODO: Call patcher's config settings to load previous presets (if loaded from file)
 
-    path = input("Enter the path to the config file (type 'CANCEL' to cancel, type 'HELP' for help): \n")
-    if path.lower() == "cancel" or path.lower == "":
-        return
-    elif path.lower() == "help":
-        print("---HELP---\n"
-              "Enter your config name here. This will be the name of the config file.\n"
-              "You can also put folders here, so entering {example}/{name} will create the config file at [appdata]/"
-              "patches/presets/{example}/{name}.midiconfig\n"
-              "The .midiconfig extension DOES NOT need to be added.\n"
-              "Press [ENTER] to continue")
-        input()
-        create_config()
-    absolute_path = f"{get_user_data_dir()}/patches/presets/{path}.midiconfig"
+    path = ""
+    current_directory = get_user_data_dir() + "/patches/presets"
+    stop = False
+    while not stop:
+        split_path = current_directory.split("/")
+        options = [".."]
+        directories = get_folders_in_folder(current_directory)
+        files = [i.split("/")[-1] for i in get_files_in_folder(current_directory, ".midiconfig")]
+        options += [f"/{i}" for i in directories]
+        options += files
+        options += ["Create a new Config here", "Cancel"]
+
+        option, index = pick(options, "Select a patch", indicator=">")
+        if index == 0:
+            if not os.path.samefile(current_directory, get_user_data_dir()):
+                split_path.pop()
+                "/".join(current_directory)
+        else:
+            index -= 1
+            if index < len(directories):
+                split_path.append(directories[index])
+            else:
+                index -= len(directories)
+                if index < len(files):
+                    path = f"{current_directory}/{files[index]}"
+                    stop = True
+                else:
+                    index -= len(files)
+                    if index == 0:
+                        new_file = input("Name your config file:\n")
+                        path = f"{current_directory}/{new_file}.midiconfig"
+                        stop = True
+                    else:
+                        return
+
+    absolute_path = path
     if os.path.exists(absolute_path):
-        options = ["Overwrite", "Cancel"]
+        options = ["Edit", "Cancel"]
         option, index = pick(options, "Config already exists. Edit config?", indicator=">")
         if index == 0:
             config_list = patcher.parse_preset(absolute_path)
@@ -267,15 +360,6 @@ def edit_patches():
     else:
         return
     edit_patches()
-
-
-def get_files_in_folder(path: str, filter_extension: str = "") -> list:
-    if not os.path.exists(path):
-        return []
-    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-    if filter_extension != "":
-        files = [f"{path}/{f}" for f in files if f.endswith(filter_extension)]
-    return files
 
 
 def select_file(path: str, maximum_back_path: str = "", allowed_extensions: str = "") -> str:

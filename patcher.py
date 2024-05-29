@@ -119,6 +119,22 @@ def get_config_list_from_patch(file_path: str) -> dict:
     return data["patch_config"]
 
 
+def get_available_presets(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    patch_config = get_config_list_from_patch(path)
+    if "preset" in patch_config:
+        preset = patch_config["preset"]
+        preset_path = f"{file_manager.get_user_data_dir()}/patches/presets/{preset}.midiconfig"
+        result = parse_preset(preset_path)
+        for key in result:
+            patch_config[key] = result[key]
+    result = []
+    for key in patch_config:
+        result.append(key)
+    return result
+
+
 def get_int_list(data: dict) -> list:
     patch_config = data["patch_config"]
     patch_list = data["patch_list"]
