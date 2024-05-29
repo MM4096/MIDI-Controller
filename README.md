@@ -30,8 +30,8 @@ Here's a list of options and what they do:
   - The main star of this project, this mode allows for playback of created lists. Always remember, press **`CTRL + C`** to quit.
   - You need to choose your Korg Kross in the options given.
   - Then, select a mode of playback.
-    - Perform a single patch ***DOESN'T WORK, NEEDS FIXING***
-      - In the prompt given, select your file of choice. The `..` option brings you out a directory. This is the `user_data_dir()` as given by `platformdirs`, and cannot be left through `..`. **Only .midipatch files are shown.**
+    - Perform a single patch
+      - In the prompt given, select your file of choice. The `..` option brings you out a directory. The `user_data_dir()` as given by `platformdirs`, cannot be left through `..`. **Only .midipatch files are shown.**
         - The cancel option brings you back to the mode of playback selection.
     - Perform a list of patches (folder)
       - In the prompt given, select a folder. As before, you cannot leave the `user_data_dir()`. When in your folder of choice, press `Select`.
