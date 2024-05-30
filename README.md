@@ -4,16 +4,15 @@ This is a project I started due to a lack of proper resources for creating patch
 This project is built with Python, using the `mido` library.
 
 ## Installation / Pulling this repo
-To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page. Download the latest binary.
-To run, open a terminal and run the executable from there.
+To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page. Download the latest binary (or go [here](https://github.com/MM4096/MIDI-Controller/releases/latest) for the latest release).
 
 To pull this repo, run the following command in the directory of your choosing:
 `git clone https://github.com/MM4096/MIDI-Controller.git`
 To update, run `git pull`.
 
 ## Usage
-- Activate the virtual environment given. This is done by using the `source .venv/bin/activate` command in your directory.
-- Run the `main.py` file using `python3 main.py`.
+- Open a terminal, and navigate to the directory with your executable in it.
+- Run the executable (`./MIDI-Controller-linux` if you didn't rename the executable). If this doesn't work, you may need to run `chmod +x ./MIDI-Controller-linux` to allow executing as a program.
 - Follow the instructions given, or look at the `In Depth Usage section` below.
 - Remember to connect your Kross 2 to your computer via a USB cable!
 
@@ -44,8 +43,8 @@ Here's a list of options and what they do:
 - **Patch Editing**
   - Edit patches and configs here.
     - **Create a patch**
-      - Enter a name at the prompt. To create a folder, use the `[FOLDER_NAME]/[FILENAME]` syntax. **DO NOT** include any extentions, the program will do so automatically.
-      - If editing, select `Overwrite` at the prompt given. This will allow for editing of an existing patch.
+      - Navigate and select your existing .midipatch file, then `Edit`, or select *Create a new patch here* to create a new patch in your currently selected folder.
+      - If creating a new patch, **DO NOT** include the `.midipatch` extention, as this will create a file called `[your_file_name].midipatch.midipatch`.
       - Select an option.
         - **Update patch list**
           - ***YOU MUST HAVE `gedit` INSTALLED TO USE THIS FEATURE!*** gedit was removed in Ubuntu 24 I think.
@@ -55,7 +54,7 @@ Here's a list of options and what they do:
         - **Update config list**
           - See **Config Editing**.
     - **Create a config**
-      - Follow the same steps as if creating a patch. If editing an existing config, select `Overwrite` when prompted.
+      - Follow the same steps as if creating a patch. If editing an existing config, select `Edit` when prompted.
       - See **Config Editing**
 
 
@@ -68,11 +67,11 @@ When creating a new entry, you are prompted to enter both a key and a value. The
 The previous key and value will be presented to you, with the option to edit both.
 ### Exit
 Saves all changes and exits.
-### Add preset
+### Add preset - Only available when editing a patch
 Adds a path to a specific config file. If you named your config file `test` (shows up as `test.midiconfig`), add the value `test` to reference that config. When completed, any value in `test` can be used in your patches.
 
 
 ## Stuffs that need doing
 - Saving a MIDI port. The functionality is there, but config overwrites every time (to use this feature anyways, go to `json_default.py` and remove the `write_main_json_file()` function (removing the body, not the function itself) after **running the program once**.
-- Windows support
+- Windows support - several functions need re-writing.
 
