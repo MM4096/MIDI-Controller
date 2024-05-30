@@ -1,5 +1,8 @@
 import json
 import subprocess
+import threading
+
+import keyboard
 import mido
 import mido.backends.rtmidi
 import platformdirs
@@ -11,25 +14,18 @@ from file_manager import *
 import patcher
 import tools
 from sys import exit
-from pynput import keyboard
 
 # region vars
 selected_port = ""
 
 # endregion
 
-# region input functions
-release_key = keyboard.Key.enter
 
-
-def set_release_key(key: keyboard.Key):
-    global release_key
-    release_key = key
-
-
-def on_release(key):
-    print(key)
-    if key == release_key:
+def can_use_keyboard_module() -> bool:
+    try:
+        keyboard.is_pressed("space")
+        return True
+    except ImportError:
         return False
 
 
@@ -461,6 +457,15 @@ def display_patch_info(path: str, selected_patch_index: int = 0, next_patch_name
         print(f"Next Patch: {next_patch_name}")
 
 
+pedal_pressed = False
+def wait_for_switch_pedal(port: str):
+    with mido.open_input(port) as inport:
+        for msg in inport:
+            if msg.type == "control_change" and msg.control == 82 and msg.value > 10:
+                pedal_pressed = True
+                return
+
+
 def performance_mode():
     performance_files = []
     os.system("clear")
@@ -489,13 +494,21 @@ def performance_mode():
         else:
             pass
     os.system("clear")
-    print("Performance mode is calibrated with [ENTER] as [Next Patch]."
+    option, selected_index = pick([i.split("/")[-1].replace(".midipatch", "") for i in performance_files],
+                                  "Select a patch to start with", indicator=">")
+
+    option, index = pick(["[ENTER] key", "Switch Pedal"], "Select switch type", indicator=">")
+    using_switch_pedal = index == 1
+
+    print(f"Performance mode is calibrated with {'SWITCH PEDAL' if using_switch_pedal else '[ENTER]'} as [Next Patch]."
           "\nTo leave Performance Mode, press [CTRL + C]."
           "\nCurrently, the loop mode is set to [LOOP]."
+          f"{'' if not using_switch_pedal else '\nMake sure your pedal is set up properly: Go to [GLOBAL/MEDIA]>'
+                                               '[G-INPUT/CTRL]>[Foot SW Assign] and set to [Foot Switch]'}"
           "\nPress [ENTER] to continue")
     input()
     with mido.open_output(preferred_port) as outport:
-        current_file_index = 0
+        current_file_index = selected_index
         current_patch_index = 0
         cached_index = -1
         while True:
@@ -512,10 +525,34 @@ def performance_mode():
                 outport.send(mido.Message("program_change", program=this_int_patch_list[clamped_index]))
                 # input()
                 cached_index = current_patch_index
-                os.system("clear")
                 display_patch_info(current_file_path, current_patch_index, next_patch_name)
-            input()
-            current_patch_index += 1
+            change_direction = 1
+            if using_switch_pedal:
+                global pedal_pressed
+                pedal_pressed = False
+                thread = threading.Thread(target=wait_for_switch_pedal, args=preferred_port)
+                thread.start()
+                while not pedal_pressed:
+                    if can_use_keyboard_module():
+                        if keyboard.is_pressed("up_arrow"):
+                            change_direction = -1
+                            break
+            else:
+                if can_use_keyboard_module():
+                    stop = False
+                    while not stop:
+                        if keyboard.is_pressed("up_arrow"):
+                            change_direction = -1
+                            stop = True
+                        elif keyboard.is_pressed("enter") or keyboard.is_pressed("space"):
+                            stop = True
+                else:
+                    response = input()
+                    if len(response) > 1:
+                        change_direction = -1
+            current_patch_index += change_direction
+            if current_patch_index < 0:
+                current_patch_index = 0
             if current_patch_index > len(this_int_patch_list):
                 current_patch_index = 0
                 current_file_index += 1
