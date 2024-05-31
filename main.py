@@ -1,11 +1,9 @@
 import json
-import subprocess
 import threading
 
 import keyboard
 import mido
 import mido.backends.rtmidi
-import platformdirs
 import os
 import json_default
 import custom_logging
