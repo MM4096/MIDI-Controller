@@ -179,6 +179,8 @@ def select_file(default_path: str, title: str = "Select a file!", allow_leaving_
             if os.path.samefile("/".join(split_path), default_path):
                 if not allow_leaving_default_path:
                     continue
+            if os.path.samefile("/".join(split_path), file_manager.get_user_data_dir()):
+                continue
             default_path = "/".join(split_path)
         else:
             index -= 1
@@ -202,6 +204,8 @@ def select_directory(default_path: str, title: str = "Select a directory!", allo
             if os.path.samefile("/".join(split_path), default_path):
                 if not allow_leaving_default_path:
                     continue
+            if os.path.samefile("/".join(split_path), file_manager.get_user_data_dir()):
+                continue
             default_path = "/".join(split_path)
         else:
             index -= 1
@@ -363,7 +367,7 @@ def edit_patch(stdscr: curses.window):
             with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "r") as f:
                 given_list = f.read().splitlines()
             os.remove(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
-            patch_list.erase()
+            patch_list = []
             for line in given_list:
                 removed_spaces = line.replace(" ", "").replace("\t", "")
                 if removed_spaces == "":
