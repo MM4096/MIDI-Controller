@@ -1,7 +1,7 @@
 import curses
 import json
-import math
 import os
+import threading
 from curses import wrapper
 from curses.textpad import Textbox, rectangle
 import mido
@@ -10,6 +10,7 @@ import tools
 import file_manager
 import preferences
 import patcher
+import sys
 
 # region colors
 
@@ -32,14 +33,56 @@ KEY_UP = [65]
 KEY_DOWN = [66]
 KEY_ENTER = [10, 13]
 KEY_BACKSPACE = [127, 263]
-
+KEY_SPACE = [32]
+KEY_ESCAPE = [27]
 
 # endregion
+
+pedal_pressed = False
+
+
+def wait_for_switch_pedal(port: str):
+    with mido.open_input(port) as inport:
+        for msg in inport:
+            if msg.type == "control_change" and msg.control == 82 and msg.value > 10:
+                global pedal_pressed
+                pedal_pressed = True
+                return
+
+
+def get_main_port():
+    with open(file_manager.get_user_data_dir() + "/main_port.data", "r") as f:
+        return f.read()
+
+
+def set_main_port(_port: str):
+    if preferences.get_preference("save_midi_port"):
+        if "Midi Through" in _port:
+            pass
+        else:
+            with open(file_manager.get_user_data_dir() + "/main_port.data", "w") as f:
+                f.write(_port)
+
+
+def get_ports():
+    return mido.get_input_names()
+
+
+def port_options() -> str:
+    ports = get_ports()
+
+    # see if saved port is available
+    main_port = get_main_port()
+    if main_port in ports:
+        return main_port
+    index, port = select_options(ports, "Select a port to connect to", ">", 0)
+    set_main_port(port)
+    return port
 
 
 def create_input(max_length: int = 20, title: str = "Input") -> str:
     new_window = curses.newwin(2, max(max_length, len(title) + 2), 0, 0)
-    new_window.clear()
+    new_window.erase()
     new_window.addstr(title + "\n")
     new_window.refresh()
     if preferences.get_preference("use_emacs_text_editor_for_inputs"):
@@ -63,7 +106,7 @@ def create_input(max_length: int = 20, title: str = "Input") -> str:
                 break
             elif len(input_string) + 1 < max_length:
                 input_string += chr(this_input)
-            new_window.clear()
+            new_window.erase()
             new_window.addstr(title + "\n")
             new_window.addstr(input_string)
             new_window.refresh()
@@ -90,7 +133,7 @@ def select_options(options: list[str], title: str, indicator: str = ">", default
         not_selected_string += " "
     new_window = curses.newwin(50, 100, 0, 0)
     while True:
-        new_window.clear()
+        new_window.erase()
         new_window.addstr(title + "\n")
         for i in range(len(options)):
             new_window.addstr(f"{not_selected_string if index != i else indicator} {options[i]}\n")
@@ -110,7 +153,7 @@ def open_program_data(stdscr: curses.window):
     while True:
         options = ["Open patches folder", "Open presets folder", "Open preferences file (requires gedit)", "Back"]
         index, option = select_options(options, "Open program data", ">", 0)
-        stdscr.clear()
+        stdscr.erase()
         if index == 0:
             os.system(f"xdg-open {file_manager.get_user_data_dir()}/patches")
         elif index == 1:
@@ -175,7 +218,7 @@ def select_directory(default_path: str, title: str = "Select a directory!", allo
 def edit_config(previous_config: dict, allow_adding_preset: bool = False) -> dict:
     saved_config = previous_config.copy()
     new_window = curses.newwin(50, 50, 0, 0)
-    new_window.clear()
+    new_window.erase()
     while True:
         current_keys = list(previous_config.keys())
         options = ["\t" + i for i in current_keys.copy()]
@@ -183,7 +226,7 @@ def edit_config(previous_config: dict, allow_adding_preset: bool = False) -> dic
         if allow_adding_preset:
             options += ["Add preset"]
         index, option = select_options(options, "Edit config\nSelect a key to edit", ">", 0)
-        new_window.clear()
+        new_window.erase()
         new_window.refresh()
         if index < len(current_keys):
             # edit key
@@ -244,7 +287,7 @@ def edit_config(previous_config: dict, allow_adding_preset: bool = False) -> dic
 
 
 def edit_absolute_config(stdscr: curses.window):
-    stdscr.clear()
+    stdscr.erase()
     index, option = select_options(["Create new config", "Edit existing config"], "Config editing", ">", 0)
     if index == 0:
         folder_path = select_directory(file_manager.get_user_data_dir() + "/patches/presets",
@@ -266,7 +309,7 @@ def edit_absolute_config(stdscr: curses.window):
 
 
 def edit_patch(stdscr: curses.window):
-    stdscr.clear()
+    stdscr.erase()
     stdscr.refresh()
     patch_path = ""
     index, option = select_options(["Create new patch", "Edit existing patch"], "Patch editing", ">", 0)
@@ -276,13 +319,14 @@ def edit_patch(stdscr: curses.window):
         if folder_path == "":
             edit_patch(stdscr)
         else:
-            stdscr.clear()
+            stdscr.erase()
             stdscr.refresh()
             name = create_input(50, "Enter the name of the new patch")
             patcher.write_data(patcher.compile_patch({}, [], ""), f"{folder_path}/{name}.midipatch")
             patch_path = f"{folder_path}/{name}.midipatch"
     elif index == 1:
-        patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True, ".midipatch")
+        patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True,
+                                 ".midipatch")
         if patch_path == "":
             edit_patch(stdscr)
     else:
@@ -319,7 +363,7 @@ def edit_patch(stdscr: curses.window):
             with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "r") as f:
                 given_list = f.read().splitlines()
             os.remove(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
-            patch_list.clear()
+            patch_list.erase()
             for line in given_list:
                 removed_spaces = line.replace(" ", "").replace("\t", "")
                 if removed_spaces == "":
@@ -345,7 +389,7 @@ def patch_editing_page(stdscr: curses.window):
     while True:
         options = ["Create/Edit patches", "Create/Edit configs", "Back"]
         index, option = select_options(options, "Patch editing", ">", 0)
-        stdscr.clear()
+        stdscr.erase()
         if index == 0:
             edit_patch(stdscr)
         elif index == 1:
@@ -354,19 +398,135 @@ def patch_editing_page(stdscr: curses.window):
             break
 
 
+def performance_mode(stdscr: curses.window):
+    performance_files = []
+    stdscr.erase()
+    stdscr.refresh()
+    if not preferences.get_preference("skip_performance_mode_info"):
+        stdscr.addstr("Welcome to Performance Mode! [Any key to continue]")
+        stdscr.refresh()
+        stdscr.getch()
+        stdscr.erase()
+        stdscr.addstr("To exit Performance Mode, press [q].\n")
+        stdscr.addstr("To switch to the next patch, press [Enter] or [SPACE].\n")
+        stdscr.addstr("To switch to the previous patch, press [Backspace] or [UP_ARROW].\n")
+        stdscr.addstr("[Any key to continue]\n")
+        stdscr.refresh()
+        stdscr.getch()
+        stdscr.erase()
+        stdscr.refresh()
+    available_ports = get_ports()
+    preferred_port = get_main_port()
+    if preferred_port not in available_ports:
+        preferred_port = port_options()
+    selected_files = False
+    while not selected_files:
+        stdscr.erase()
+        stdscr.refresh()
+        index, option = select_options(["Perform a single patch", "Perform a list of patches from a folder", "Back"],
+                                       "Performance Mode", ">", 0)
+        if index == 0:
+            patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True,
+                                     ".midipatch")
+            if patch_path == "":
+                continue
+            performance_files = [patch_path]
+            selected_files = True
+        elif index == 1:
+            folder_path = select_directory(file_manager.get_user_data_dir() + "/patches", "Select a folder", False)
+            if folder_path == "":
+                continue
+            performance_files = [folder_path + "/" + i for i in file_manager.get_files_in_dir(folder_path) if
+                                 i.endswith(".midipatch")]
+            selected_files = True
+        else:
+            return
+        list_of_files = [i.split("/")[-1].replace(".midipatch", "") for i in performance_files]
+        stdscr.erase()
+        stdscr.refresh()
+        index, option = select_options(["Yes", "No"], "Here's a list of files to perform. Is this OK?"
+                                                      "\n" + "\n".join(list_of_files), ">", 0)
+        if index == 0:
+            break
+    index, option = select_options([i.split("/")[-1].replace(".midipatch", "") for i in performance_files],
+                                   "Which patch would you like to start with?", ">", 0)
+
+    stdscr.erase()
+    stdscr.refresh()
+    with mido.open_output(preferred_port) as outport:
+        current_file_index = index
+        current_patch_index = 0
+        cached_index = -1
+        stop = False
+        while not stop:
+            current_file_path = performance_files[current_file_index]
+            this_patch_list = patcher.parse_patch_from_file(current_file_path)
+            this_int_patch_list = patcher.get_int_list(this_patch_list)
+            next_file_path = performance_files[current_file_index + 1] if current_file_index + 1 < len(
+                performance_files) else performance_files[0]
+            next_patch_name = patcher.parse_patch_from_file(next_file_path)["patch_name"]
+            if cached_index != current_patch_index:
+                cached_index = current_patch_index
+                clamped_index = tools.clampi(current_patch_index, 0, len(this_int_patch_list) - 1)
+                outport.send(mido.Message("program_change", program=this_int_patch_list[clamped_index]))
+                # region display info
+                stdscr.erase()
+                current_file_name = patcher.parse_patch_from_file(current_file_path)["patch_name"]
+                stdscr.addstr(f"Current patch: {current_file_name}\n")
+                patch_list = patcher.parse_patch_from_file(current_file_path)["patch_list"]["list"]
+                for i in range(len(patch_list)):
+                    modifier = ">" if current_patch_index == i else " "
+                    stdscr.addstr(f" {modifier}  {patch_list[i]}\n")
+                if current_patch_index >= len(this_int_patch_list):
+                    stdscr.addstr(" >  [END OF PATCH LIST]")
+                else:
+                    stdscr.addstr("    [END OF PATCH LIST]")
+                stdscr.addstr(f"\n\nNext patch: {next_patch_name}\n")
+                stdscr.refresh()
+                # endregion
+
+            direction = 1
+            global pedal_pressed
+            pedal_pressed = False
+            thread = threading.Thread(target=wait_for_switch_pedal, args=[preferred_port])
+            thread.start()
+            stdscr.nodelay(1)
+            stdscr.timeout(100)
+            while not pedal_pressed:
+                this_input = stdscr.getch()
+                if this_input in KEY_ENTER or this_input in KEY_SPACE:
+                    direction = 1
+                    break
+                elif this_input in KEY_BACKSPACE or this_input in KEY_UP:
+                    direction = -1
+                    break
+                elif this_input in KEY_ESCAPE:
+                    stop = True
+                    break
+            current_patch_index += direction
+            if current_patch_index < 0:
+                current_patch_index = 0
+            elif current_patch_index > len(this_int_patch_list):
+                # next file
+                current_patch_index = 0
+                current_file_index += 1
+                if current_file_index >= len(performance_files):
+                    current_file_index = 0
+
+
 def menu(stdscr: curses.window):
-    stdscr.clear()
+    stdscr.erase()
 
     while True:
         stdscr.refresh()
         options = ["Select MIDI port", "Performance Mode", "Open program data", "Patch/Config editing", "Exit"]
         index, option = select_options(options,
                                        "Welcome to MIDI-CONTROLLER!\nWhat would you like to do?", ">", 0)
-        stdscr.clear()
+        stdscr.erase()
         if index == 0:
             pass
         elif index == 1:
-            pass
+            performance_mode(stdscr)
         elif index == 2:
             open_program_data(stdscr)
         elif index == 3:
@@ -378,3 +538,4 @@ def menu(stdscr: curses.window):
 if __name__ == "__main__":
     create_needed_files()
     wrapper(menu)
+    exit(0)

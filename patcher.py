@@ -1,7 +1,6 @@
 import json
 import os
 
-import custom_logging
 import file_manager
 import tools
 
@@ -43,8 +42,8 @@ def parse_patch(patch_info: str) -> dict:
             removed_config_data_lines.remove(line)
 
         if started_config_search and started_list_search:
-            custom_logging.print_error("Error: startconfig and startlist were found at the same time.",
-                                "Patch Parser", skip_custom_logging=True)
+            # custom_logging.print_error("Error: startconfig and startlist were found at the same time.",
+            #                     "Patch Parser", skip_custom_logging=True)
             return null_parse
 
         if started_config_search:
@@ -58,12 +57,12 @@ def parse_patch(patch_info: str) -> dict:
     list_lines.pop(0)
 
     if started_config_search:
-        custom_logging.print_error("Error: startconfig was found but endconfig was not found.", "Patch Parser",
-                            skip_custom_logging=True)
+        # custom_logging.print_error("Error: startconfig was found but endconfig was not found.", "Patch Parser",
+        #                     skip_custom_logging=True)
         return null_parse
     elif started_list_search:
-        custom_logging.print_error("Error: startlist was found but endlist was not found.", "Patch Parser",
-                            skip_custom_logging=True)
+        # custom_logging.print_error("Error: startlist was found but endlist was not found.", "Patch Parser",
+        #                     skip_custom_logging=True)
         return null_parse
 
     # finally, values
@@ -92,7 +91,6 @@ def parse_preset(filepath: str) -> dict:
     if not ".midiconfig" in filepath:
         filepath += ".midiconfig"
     if not os.path.exists(filepath):
-        custom_logging.print_error(f"Error: Preset file [{filepath}] does not exist.", "Patch Parser", skip_logging=True)
         return {}
     with open(filepath, "r") as file:
         contents = file.read()
@@ -153,10 +151,8 @@ def get_int_list(data: dict) -> list:
             elif obj in patch_config:
                 final_int_list.append(patch_config[obj])
             else:
-                custom_logging.print_warning(f"Error: Key {obj} not found in patch config.",
-                                             "Patch Parser", skip_logging=True)
+                pass
     else:
-        custom_logging.print_error("Error: Key [list] not found in patch list.", "Patch Parser", skip_logging=True)
         return []
     return final_int_list
 
@@ -168,7 +164,7 @@ def patch_return_int_list(file_path: str) -> list:
 
 def write_data(string: str, file_path: str):
     if os.path.exists(file_path):
-        custom_logging.print_warning(f"File [{file_path}] already exists! Overwriting.",)
+        pass
     file_manager.write_data(string, file_path)
 
 

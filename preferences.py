@@ -10,6 +10,7 @@ preferences = {
     "print_logs": False,
     "use_textbox_inputs": False,
     "use_emacs_text_editor_for_inputs": False,
+    "skip_performance_mode_info": False,
 }
 
 
