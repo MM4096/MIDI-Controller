@@ -1,5 +1,6 @@
 import curses
 import json
+import multiprocessing
 import os
 import threading
 from curses import wrapper
@@ -42,10 +43,10 @@ pedal_pressed = False
 
 
 def wait_for_switch_pedal(port: str):
+    global pedal_pressed
     with mido.open_input(port) as inport:
         for msg in inport:
             if msg.type == "control_change" and msg.control == 82 and msg.value > 10:
-                global pedal_pressed
                 pedal_pressed = True
                 return
 
@@ -492,8 +493,8 @@ def performance_mode(stdscr: curses.window):
             direction = 1
             global pedal_pressed
             pedal_pressed = False
-            thread = threading.Thread(target=wait_for_switch_pedal, args=[preferred_port])
-            thread.start()
+            process = multiprocessing.Process(target=wait_for_switch_pedal, args=[preferred_port])
+            process.start()
             stdscr.nodelay(1)
             stdscr.timeout(100)
             while not pedal_pressed:
@@ -507,6 +508,8 @@ def performance_mode(stdscr: curses.window):
                 elif this_input in KEY_ESCAPE:
                     stop = True
                     break
+            process.kill()
+
             current_patch_index += direction
             if current_patch_index < 0:
                 current_patch_index = 0
