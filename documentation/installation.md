@@ -2,6 +2,11 @@
 This section will guide you through the installation process of this program.
 
 Currently, this program is built for Linux, and isn't tested/may not work on other operating systems.
+
+***NOTE: This guide refers to the newer, documentation-still-isn't-complete project,
+and as such may have undiscovered bugs and problems, alongside incomplete documentation.
+If you want to use the older, slightly more stable version, go [here](old_instructions.md) for instructions on how to use that.***
+
 ## Basic Installation
 To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page, or get the latest release [here](https://github.com/MM4096/MIDI-Controller/releases/latest).
 Download the `MIDI-CONTROLLER-linux` file, and place it in a directory of your choosing.
