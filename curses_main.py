@@ -7,6 +7,8 @@ from curses import wrapper
 from curses.textpad import Textbox, rectangle
 import mido
 import mido.backends.rtmidi
+
+import logs
 import tools
 import file_manager
 import preferences
@@ -497,7 +499,7 @@ def performance_mode(stdscr: curses.window):
             process.start()
             stdscr.nodelay(1)
             stdscr.timeout(100)
-            while not pedal_pressed:
+            while process.is_alive():
                 this_input = stdscr.getch()
                 if this_input in KEY_ENTER or this_input in KEY_SPACE:
                     direction = 1
@@ -508,8 +510,8 @@ def performance_mode(stdscr: curses.window):
                 elif this_input in KEY_ESCAPE:
                     stop = True
                     break
-            process.kill()
-
+            if process.is_alive():
+                process.kill()
             current_patch_index += direction
             if current_patch_index < 0:
                 current_patch_index = 0
@@ -531,7 +533,7 @@ def menu(stdscr: curses.window):
                                        "Welcome to MIDI-CONTROLLER!\nWhat would you like to do?", ">", 0)
         stdscr.erase()
         if index == 0:
-            pass
+            port_options()
         elif index == 1:
             performance_mode(stdscr)
         elif index == 2:
