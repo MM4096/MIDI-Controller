@@ -145,6 +145,44 @@ def select_options(options: list[str], title: str, indicator: str = ">", default
     return index, options[index]
 
 
+def select_options_multiple(options: list[str], title: str, indicator: str = ">", selected: str = "*") -> (
+        int, list[str]):
+    set_cursor_visibility(False)
+    selected_options: list[bool] = []
+    for i in options:
+        selected_options.append(False)
+    not_selected_string = ""
+    for i in range(len(selected)):
+        not_selected_string += " "
+    not_indicated_string = ""
+    for i in range(len(indicator)):
+        not_indicated_string += " "
+    new_window = curses.newwin(50, 100, 0, 0)
+    index = 0
+    options.append("Select")
+    while True:
+        new_window.erase()
+        new_window.addstr(title + "\n")
+        for i in range(len(options)):
+            new_window.addstr(f"{indicator if i == index else not_indicated_string} "
+                              f"{selected if i < len(options) - 1 and selected_options[i] else not_selected_string} "
+                              f"{options[i]}\n")
+        new_window.refresh()
+        this_input = new_window.getch()
+        if this_input in KEY_UP:
+            index = tools.clampi(index - 1, 0, len(options) - 1)
+        elif this_input in KEY_DOWN:
+            index = tools.clampi(index + 1, 0, len(options) - 1)
+        elif this_input in KEY_ENTER:
+            if index == len(options) - 1:
+                # pressed select
+                break
+            else:
+                selected_options[index] = not selected_options[index]
+    set_cursor_visibility(True)
+    return index, [options[i] for i in range(len(options) - 1) if selected_options[i]]
+
+
 def set_up_preferences(stdscr, new_preferences: list[preferences.Preference]):
     return
     # TODO: Functionality
@@ -227,7 +265,9 @@ def sort_list_by_numbering_system(str_list: list, return_only_filenames: bool = 
     parsed_files = [parse_filename(file) for file in filenames]
     sorted_files = sorted(parsed_files, key=lambda x: (x[0], x[1], x[2]))
 
-    recomposed_files = [''.join([f"{x[0]}" if x[0] != float('inf') else '', x[1], f" {'\t' if add_tab else ''}{x[2]}.{x[3]}"]).strip() for x in sorted_files]
+    recomposed_files = [
+        ''.join([f"{x[0]}" if x[0] != float('inf') else '', x[1], f" {'\t' if add_tab else ''}{x[2]}.{x[3]}"]).strip()
+        for x in sorted_files]
     recomposed_directories = [f"{dirnames[i]}/{recomposed_files[i]}" for i in range(len(recomposed_files))]
     return recomposed_files if return_only_filenames else recomposed_directories
 
@@ -415,7 +455,7 @@ def edit_patch(stdscr: curses.window):
     patch_list = patch["patch_list"]["list"]
 
     value = preferences.get_preference_value("default_preset")
-    if isinstance(value, str) and value != "":
+    if isinstance(value, str) and value != "" and "preset" not in patch_config:
         index, option = select_options(["Yes", "No"], f"Would you like to use the default preset [{value}]?", ">", 0)
         if index == 0:
             patch_config["preset"] = value
@@ -440,8 +480,9 @@ def edit_patch(stdscr: curses.window):
                          f"{'\n\t# '.join(available_presets)}\n\n"
                          "# Leave the next line the way it currently is\n"
                          "startlist\n"
-                         "# start patching here\n")
-            file_data += "\n".join(patch_list)
+                         "# start patching here\n"
+                         "# use '--' after a sound to declare a comment (having no '--' will result in no comment)\n")
+            file_data += "\n".join([f"{i['sound']} -- {i['comments']}" for i in patch_list])
             with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "w") as f:
                 f.write(file_data)
             run_command(Command.WRITE_FILE, f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
@@ -450,7 +491,7 @@ def edit_patch(stdscr: curses.window):
             with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "r") as f:
                 given_list = f.read().splitlines()
             os.remove(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
-            patch_list = []
+            list_copy: list = []
             for line in given_list:
                 removed_spaces = line.replace(" ", "").replace("\t", "")
                 if removed_spaces == "":
@@ -458,15 +499,19 @@ def edit_patch(stdscr: curses.window):
                 elif removed_spaces[0] == "#":
                     pass
                 else:
-                    patch_list.append(line)
-            list_copy = patch_list.copy()
+                    list_copy.append(line)
+            patch_list = []
+            found_start = False
             for line in list_copy:
                 if line == "startlist":
-                    patch_list.remove(line)
-                    break
-                else:
+                    found_start = True
+                elif found_start:
+                    line_split: list = line.split("--")
+                    if len(line_split) == 1:
+                        line_split.append("")
+                    patch_list.append({"sound": line_split[0].strip(), "comments": line_split[1].strip()})
+                elif line != "":
                     patch_name = line
-                    patch_list.remove(line)
             patcher.write_data(patcher.compile_patch(patch_config, patch_list, patch_name), patch_path)
         elif index == 2:
             return
@@ -511,7 +556,8 @@ def performance_mode(stdscr: curses.window):
     while not selected_files:
         stdscr.erase()
         stdscr.refresh()
-        index, option = select_options(["Perform a single patch", "Perform a list of patches from a folder", "Back"],
+        index, option = select_options(["Perform a single patch", "Perform a list of patches from a folder",
+                                        "Perform a list of patches in a folder (select from folder)", "Back"],
                                        "Performance Mode", ">", 0)
         if index == 0:
             patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True,
@@ -530,6 +576,21 @@ def performance_mode(stdscr: curses.window):
             performance_files = sort_list_by_numbering_system(performance_files)
             display_files = sort_list_by_numbering_system(performance_files, True)
             selected_files = True
+        elif index == 2:
+            folder_path = select_directory(file_manager.get_user_data_dir() + "/patches", "Select a folder", False)
+            if folder_path == "":
+                continue
+            performance_files = select_options_multiple(
+                sort_list_by_numbering_system([i for i in file_manager.get_files_in_dir(folder_path) if
+                                               i.endswith("midipatch")]), "Select patches to perform")[1]
+            performance_files = [f"{folder_path}/{i}" for i in performance_files]
+            stdscr.clear()
+            stdscr.addstr(str(performance_files))
+            stdscr.refresh()
+            stdscr.getch()
+            performance_files = sort_list_by_numbering_system([f"{folder_path}/{i}" for i in performance_files], True)
+            selected_files = True
+            display_files = sort_list_by_numbering_system(performance_files, True)
         else:
             return
         list_of_files = [i.split("/")[-1].replace(".midipatch", "") for i in display_files]
@@ -539,8 +600,11 @@ def performance_mode(stdscr: curses.window):
                                                       "\n" + "\n".join(list_of_files), ">", 0)
         if index == 0:
             break
-    index, option = select_options([i.split("/")[-1].replace(".midipatch", "") for i in display_files],
-                                   "Which patch would you like to start with?", ">", 0)
+
+    index = 0
+    if len(list_of_files) > 1:
+        index, option = select_options([i.split("/")[-1].replace(".midipatch", "") for i in display_files],
+                                       "Which patch would you like to start with?", ">", 0)
 
     stdscr.erase()
     stdscr.refresh()
@@ -552,6 +616,7 @@ def performance_mode(stdscr: curses.window):
         stop = False
         skip_input_wait = False
         while not stop:
+            set_cursor_visibility(False)
             skip_input_wait = False
             # if not is_port_connected(preferred_port):
             #     stdscr.clear()
@@ -561,6 +626,7 @@ def performance_mode(stdscr: curses.window):
             current_file_path = performance_files[current_file_index]
             this_patch_list = patcher.parse_patch_from_file(current_file_path)
             this_int_patch_list = patcher.get_int_list(this_patch_list)
+            this_comment_list = patcher.get_comment_list(this_patch_list)
             next_file_path = performance_files[current_file_index + 1] if current_file_index + 1 < len(
                 performance_files) else performance_files[0]
             next_patch_name = patcher.parse_patch_from_file(next_file_path)["patch_name"]
@@ -574,10 +640,10 @@ def performance_mode(stdscr: curses.window):
                 stdscr.erase()
                 current_file_name = patcher.parse_patch_from_file(current_file_path)["patch_name"]
                 stdscr.addstr(f"Current patch: {current_file_name}\n")
-                patch_list = patcher.parse_patch_from_file(current_file_path)["patch_list"]["list"]
+                patch_list = patcher.get_patch_list(current_file_path)
                 for i in range(len(patch_list)):
                     modifier = ">" if current_patch_index == i else " "
-                    stdscr.addstr(f" {modifier}  {patch_list[i]}\n")
+                    stdscr.addstr(f" {modifier}  {patch_list[i]["sound"]}\n")
                 if current_patch_index >= len(this_int_patch_list):
                     if not preferences.get_preference_value("only_require_one_press_for_next_patch"):
                         pass
@@ -588,11 +654,14 @@ def performance_mode(stdscr: curses.window):
                 else:
                     stdscr.addstr("    [END OF PATCH LIST]")
                 stdscr.addstr(f"\n\nNext patch: {next_patch_name}\n")
+                stdscr.addstr("\n\n\n")
+                stdscr.addstr(f"Notes:\n{this_comment_list[clamped_index]}\n")
                 stdscr.refresh()
                 # endregion
 
             direction = 1
             global pedal_pressed
+            list_of_files = []
             pedal_pressed = False
             process = multiprocessing.Process(target=wait_for_switch_pedal, args=[preferred_port])
             process.start()

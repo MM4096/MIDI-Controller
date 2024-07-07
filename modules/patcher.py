@@ -88,7 +88,7 @@ def parse_preset(filepath: str) -> dict:
 
     If {filepath} does not contain the .midiconfig extension, this function will add that extension
     """
-    if not ".midiconfig" in filepath:
+    if ".midiconfig" not in filepath:
         filepath += ".midiconfig"
     if not os.path.exists(filepath):
         return {}
@@ -146,15 +146,30 @@ def get_int_list(data: dict) -> list:
     final_int_list = []
     if "list" in patch_list:
         for obj in patch_list["list"]:
-            if tools.is_int(obj):
-                final_int_list.append(int(obj))
-            elif obj in patch_config:
-                final_int_list.append(patch_config[obj])
-            else:
-                final_int_list.append(0)
+            if isinstance(obj, dict):
+                if tools.is_int(obj["sound"]):
+                    final_int_list.append(int(obj["sound"]))
+                elif obj["sound"] in patch_config:
+                    final_int_list.append(patch_config[obj["sound"]])
+                else:
+                    final_int_list.append(0)
     else:
         return []
     return final_int_list
+
+
+def get_comment_list(data: dict) -> list:
+    patch_list = data["patch_list"]
+    final_comment_list = []
+    if "list" in patch_list:
+        for obj in patch_list["list"]:
+            if isinstance(obj, dict):
+                final_comment_list.append(obj["comments"])
+            else:
+                final_comment_list.append("")
+    else:
+        return []
+    return final_comment_list
 
 
 def patch_return_int_list(file_path: str) -> list:
@@ -184,4 +199,28 @@ def compile_patch(config: dict, patch_list: list, patch_name: str) -> str:
             f"endlist")
 
 
-# print(patch_return_int_list("demo/patch.midipatch"))
+def convert_legacy_format_to_new_format_sound_list(filepath: str):
+    """
+    Modifies the old patch list method of "array of sounds" to "array of dictionaries with sounds and comments
+    :param filepath: path of file to edit
+    """
+    current_data: dict = parse_patch_from_file(filepath)
+    current_list: list = current_data["patch_list"]["list"]
+    new_list: list = []
+    for obj in current_list:
+        if isinstance(obj, dict):
+            new_list.append(obj)
+        else:
+            new_list.append({"sound": obj, "comments": ""})
+    current_data["patch_list"]["list"] = new_list
+    new_patch = compile_patch(current_data["patch_config"], current_data["patch_list"]["list"],
+                              current_data["patch_name"])
+    write_data(new_patch, filepath)
+
+# Code for changes
+# if __name__ == "__main__":
+#     for i in os.listdir(file_manager.get_user_data_dir() + "/patches/cinderella"):
+#         print(f"Editing {i}...")
+#         if ".midipatch" in i:
+#             convert_legacy_format_to_new_format_sound_list(file_manager.get_user_data_dir() + "/patches/cinderella/" + i)
+
