@@ -59,6 +59,22 @@ def is_port_connected(_port: str) -> bool:
     return get_ports().count(_port) > 0
 
 
+def fix_screen_size(stdscr: curses.window):
+    while True:
+        target_width = 100
+        target_height = 25
+        height, width = stdscr.getmaxyx()
+
+        stdscr.erase()
+        if height >= target_height and width >= target_width:
+            return
+        else:
+            stdscr.addstr(f"Window is too small! Please resize to a minimum [height]:[width] of "
+                          f"{target_height}:{target_width}!(is {height}:{width})")
+
+        stdscr.refresh()
+
+
 def set_main_port(_port: str):
     if preferences.get_preference_value("save_midi_port"):
         if "Midi Through" in _port:
@@ -131,8 +147,15 @@ def select_options(options: list[str], title: str, indicator: str = ">", default
     while True:
         new_window.erase()
         new_window.addstr(title + "\n")
-        for i in range(len(options)):
-            new_window.addstr(f"{not_selected_string if index != i else indicator} {options[i]}\n")
+
+        cut_options, start_index = tools.cut_array(options, index, 15)
+        has_options_before: bool = start_index > 0
+        has_options_after: bool = tools.is_sublist_with_more_elements(options, cut_options, start_index)
+        new_window.addstr("/\\\n" if has_options_before else "")
+        for i in range(len(cut_options)):
+            new_window.addstr(f"{not_selected_string if index != i + start_index else indicator} {cut_options[i]}\n")
+        if has_options_after:
+            new_window.addstr("\\/")
         new_window.refresh()
         this_input = new_window.getch()
         if this_input in KEY_UP:
@@ -640,10 +663,17 @@ def performance_mode(stdscr: curses.window):
                 stdscr.erase()
                 current_file_name = patcher.parse_patch_from_file(current_file_path)["patch_name"]
                 stdscr.addstr(f"Current patch: {current_file_name}\n")
+
                 patch_list = patcher.get_patch_list(current_file_path)
-                for i in range(len(patch_list)):
-                    modifier = ">" if current_patch_index == i else " "
-                    stdscr.addstr(f" {modifier}  {patch_list[i]["sound"]}\n")
+                cut_list, starting_index = tools.cut_array(patch_list, current_patch_index, 15)
+                has_items_before: bool = starting_index > 0
+                has_items_after: bool = tools.is_sublist_with_more_elements(patch_list, cut_list, starting_index)
+                stdscr.addstr("/\\\n" if has_items_before else "\n")
+                for i in range(len(cut_list)):
+                    modifier = ">" if current_patch_index == i + starting_index else " "
+                    stdscr.addstr(f" {modifier}  {cut_list[i]["sound"]}\n")
+                if has_items_after:
+                    stdscr.addstr("\\/")
                 if current_patch_index >= len(this_int_patch_list):
                     if not preferences.get_preference_value("only_require_one_press_for_next_patch"):
                         pass
@@ -704,6 +734,8 @@ def performance_mode(stdscr: curses.window):
 def menu(stdscr: curses.window):
     stdscr.erase()
     create_needed_files(stdscr)
+
+    fix_screen_size(stdscr)
 
     while True:
         stdscr.refresh()
