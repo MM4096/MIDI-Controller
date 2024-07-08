@@ -217,10 +217,15 @@ def convert_legacy_format_to_new_format_sound_list(filepath: str):
                               current_data["patch_name"])
     write_data(new_patch, filepath)
 
-# Code for changes
-# if __name__ == "__main__":
-#     for i in os.listdir(file_manager.get_user_data_dir() + "/patches/cinderella"):
-#         print(f"Editing {i}...")
-#         if ".midipatch" in i:
-#             convert_legacy_format_to_new_format_sound_list(file_manager.get_user_data_dir() + "/patches/cinderella/" + i)
 
+# Code for changes
+# change "filepath" to your target path.
+# leaving it blank searches all of `get_user_data_dir()`
+filepath = "/"
+if __name__ == "__main__":
+    files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(file_manager.get_user_data_dir() + filepath)
+             for f in filenames if os.path.splitext(f)[1] == '.midipatch']
+    for index, i in enumerate(files):
+        print(f"Editing {i} (File: {index + 1}/{len(files)})")
+        convert_legacy_format_to_new_format_sound_list(i)
+        print("Successful!")
