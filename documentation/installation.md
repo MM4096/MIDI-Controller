@@ -37,6 +37,9 @@ python3 MIDI-Controller-linux.py
 
 ## Pre-requisites
 This program requires the following packages to be installed:
+
+(One of)
+- nano (Should be installed by default on most distros)
 - gedit (Ubuntu: `sudo apt-get install gedit`)
 
 
