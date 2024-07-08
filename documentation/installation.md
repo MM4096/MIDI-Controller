@@ -32,7 +32,7 @@ source .venv/bin/activate
 ```
 The main file is `curses_main.py`, and can be run with the following command:
 ```bash
-python3 curses_main.py
+python3 MIDI-Controller-linux.py
 ```
 
 ## Pre-requisites
