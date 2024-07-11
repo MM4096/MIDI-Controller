@@ -7,7 +7,7 @@
 ### Method of Updating
 - Download the source code and set up dependencies [(instructions)](installation.md#pulling-this-repo)
 - Run the following command (from the root directory):
-```bash
+```bash                            
 python3 modules/patcher.py
 ```
 - This *should* be all

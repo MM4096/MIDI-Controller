@@ -41,12 +41,12 @@ KEY_ESCAPE = [27]
 pedal_pressed = False
 
 
-def wait_for_switch_pedal(port: str):
+def wait_for_switch_pedal(port: str, event):
     global pedal_pressed
     with mido.open_input(port) as inport:
         for msg in inport:
             if msg.type == "control_change" and msg.control == 82 and msg.value > 10:
-                pedal_pressed = True
+                event.set()
                 return
 
 
@@ -186,10 +186,18 @@ def select_options_multiple(options: list[str], title: str, indicator: str = ">"
     while True:
         new_window.erase()
         new_window.addstr(title + "\n")
-        for i in range(len(options)):
-            new_window.addstr(f"{indicator if i == index else not_indicated_string} "
-                              f"{selected if i < len(options) - 1 and selected_options[i] else not_selected_string} "
-                              f"{options[i]}\n")
+
+        cut_options, start_index = tools.cut_array(options, index, 15)
+        has_options_before: bool = start_index > 0
+        has_options_after: bool = tools.is_sublist_with_more_elements(options, cut_options, start_index)
+        new_window.addstr("/\\\n" if has_options_before else "\n")
+        for i in range(len(cut_options)):
+            new_window.addstr(f"{indicator if i + start_index == index else not_indicated_string} "
+                              f"{selected if i + start_index < len(options) - 1 and selected_options[i + start_index] else not_selected_string} "
+                              f"{options[i + start_index]}\n")
+        if has_options_after:
+            new_window.addstr("\\/")
+
         new_window.refresh()
         this_input = new_window.getch()
         if this_input in KEY_UP:
@@ -631,104 +639,121 @@ def performance_mode(stdscr: curses.window):
 
     stdscr.erase()
     stdscr.refresh()
-    with mido.open_output(preferred_port) as outport:
-        current_file_index = index
-        current_patch_index = 0
-        cached_index = -1
-        cached_file_index = -1
-        stop = False
+
+    while True:
+        try:
+            outport = mido.open_output(preferred_port)
+            break
+        except OSError:
+            stdscr.erase()
+            stdscr.addstr(f"Connection [{preferred_port}] not connected! Waiting for a connection...")
+    current_file_index = index
+    current_patch_index = 0
+    cached_index = -1
+    cached_file_index = -1
+    stop = False
+    skip_input_wait = False
+    while not stop:
+        set_cursor_visibility(False)
         skip_input_wait = False
-        while not stop:
-            set_cursor_visibility(False)
-            skip_input_wait = False
-            # if not is_port_connected(preferred_port):
-            #     stdscr.clear()
-            #     stdscr.addstr("Keyboard disconnected/MIDI Connection lost. Waiting for a connection.")
-            #     while not is_port_connected(preferred_port):
-            #         pass
-            current_file_path = performance_files[current_file_index]
-            this_patch_list = patcher.parse_patch_from_file(current_file_path)
-            this_int_patch_list = patcher.get_int_list(this_patch_list)
-            this_comment_list = patcher.get_comment_list(this_patch_list)
-            next_file_path = performance_files[current_file_index + 1] if current_file_index + 1 < len(
-                performance_files) else performance_files[0]
-            next_patch_name = patcher.parse_patch_from_file(next_file_path)["patch_name"]
+        # if not is_port_connected(preferred_port):
+        #     stdscr.clear()
+        #     stdscr.addstr("Keyboard disconnected/MIDI Connection lost. Waiting for a connection.")
+        #     while not is_port_connected(preferred_port):
+        #         pass
+        current_file_path = performance_files[current_file_index]
+        this_patch_list = patcher.parse_patch_from_file(current_file_path)
+        this_int_patch_list = patcher.get_int_list(this_patch_list)
+        this_comment_list = patcher.get_comment_list(this_patch_list)
+        next_file_path = performance_files[current_file_index + 1] if current_file_index + 1 < len(
+            performance_files) else performance_files[0]
+        next_patch_name = patcher.parse_patch_from_file(next_file_path)["patch_name"]
 
-            if cached_index != current_patch_index or cached_file_index != current_file_index:
-                cached_index = current_patch_index
-                cached_file_index = current_file_index
-                clamped_index = tools.clampi(current_patch_index, 0, len(this_int_patch_list) - 1)
-                outport.send(mido.Message("program_change", program=this_int_patch_list[clamped_index]))
-                # region display info
-                stdscr.erase()
-                current_file_name = patcher.parse_patch_from_file(current_file_path)["patch_name"]
-                stdscr.addstr(f"Current patch: {current_file_name}\n")
+        if cached_index != current_patch_index or cached_file_index != current_file_index:
+            cached_index = current_patch_index
+            cached_file_index = current_file_index
+            clamped_index = tools.clampi(current_patch_index, 0, len(this_int_patch_list) - 1)
 
-                patch_list = patcher.get_patch_list(current_file_path)
-                cut_list, starting_index = tools.cut_array(patch_list, current_patch_index, 15)
-                has_items_before: bool = starting_index > 0
-                has_items_after: bool = tools.is_sublist_with_more_elements(patch_list, cut_list, starting_index)
-                stdscr.addstr("/\\\n" if has_items_before else "\n")
-                for i in range(len(cut_list)):
-                    modifier = ">" if current_patch_index == i + starting_index else " "
-                    stdscr.addstr(f" {modifier}  {cut_list[i]["sound"]}\n")
-                if has_items_after:
-                    stdscr.addstr("\\/")
-                if current_patch_index >= len(this_int_patch_list):
-                    if not preferences.get_preference_value("only_require_one_press_for_next_patch"):
-                        pass
-                    else:
-                        current_patch_index += 1
-                        skip_input_wait = True
-                    stdscr.addstr(" >  [END OF PATCH LIST]")
+            while True:
+                try:
+                    outport.send(mido.Message("program_change", program=this_int_patch_list[clamped_index]))
+                    break
+                except OSError:
+                    stdscr.erase()
+                    stdscr.addstr(f"Connection [{preferred_port}] not connected! Waiting for a connection...")
+
+            # region display info
+            stdscr.erase()
+            current_file_name = patcher.parse_patch_from_file(current_file_path)["patch_name"]
+            stdscr.addstr(f"Current patch: {current_file_name}\n")
+
+            patch_list = patcher.get_patch_list(current_file_path)
+            cut_list, starting_index = tools.cut_array(patch_list, current_patch_index, 15)
+            has_items_before: bool = starting_index > 0
+            has_items_after: bool = tools.is_sublist_with_more_elements(patch_list, cut_list, starting_index)
+            stdscr.addstr("/\\\n" if has_items_before else "\n")
+            for i in range(len(cut_list)):
+                modifier = ">" if current_patch_index == i + starting_index else " "
+                stdscr.addstr(f" {modifier}  {cut_list[i]["sound"]}\n")
+            if has_items_after:
+                stdscr.addstr("\\/")
+            if current_patch_index >= len(this_int_patch_list):
+                if not preferences.get_preference_value("only_require_one_press_for_next_patch"):
+                    pass
                 else:
-                    stdscr.addstr("    [END OF PATCH LIST]")
-                stdscr.addstr(f"\n\nNext patch: {next_patch_name}\n")
-                stdscr.addstr("\n\n\n")
-                stdscr.addstr(f"Notes:\n{this_comment_list[clamped_index]}\n")
-                stdscr.refresh()
-                # endregion
+                    current_patch_index += 1
+                    skip_input_wait = True
+                stdscr.addstr(" >  [END OF PATCH LIST]")
+            else:
+                stdscr.addstr("    [END OF PATCH LIST]")
+            stdscr.addstr(f"\n\nNext patch: {next_patch_name}\n")
+            stdscr.addstr("\n\n\n")
+            stdscr.addstr(f"Notes:\n{this_comment_list[clamped_index]}\n")
+            stdscr.refresh()
+            # endregion
 
-            direction = 1
-            global pedal_pressed
-            list_of_files = []
-            pedal_pressed = False
-            process = multiprocessing.Process(target=wait_for_switch_pedal, args=[preferred_port])
-            process.start()
-            stdscr.nodelay(True)
-            stdscr.timeout(100)
-            while process.is_alive() and not skip_input_wait:
-                this_input = stdscr.getch()
-                if this_input in KEY_ENTER or this_input in KEY_SPACE:
-                    direction = 1
-                    break
-                elif this_input in KEY_BACKSPACE or this_input in KEY_UP:
-                    direction = -1
-                    break
-                elif this_input in KEY_ESCAPE:
-                    stop = True
-                    break
-            if process.is_alive():
-                process.kill()
-            current_patch_index += direction
-            if current_patch_index < 0:
-                if preferences.get_preference_value("allow_backtracking_in_performance_mode"):
-                    current_file_index -= 1
-                    if current_file_index < 0:
-                        if preferences.get_preference_value("loop_performance_mode"):
-                            current_file_index = len(performance_files) - 1
-                        else:
-                            current_file_index = 0
-                current_patch_index = 0
-            elif current_patch_index > len(this_int_patch_list):
-                # next file
-                current_patch_index = 0
-                current_file_index += 1
-                if current_file_index >= len(performance_files):
+        direction = 1
+        global pedal_pressed
+        list_of_files = []
+        pedal_pressed = False
+        pedal_event = multiprocessing.Event()
+        process = multiprocessing.Process(target=wait_for_switch_pedal, args=[preferred_port, pedal_event])
+        process.start()
+        stdscr.nodelay(True)
+        stdscr.timeout(100)
+        while not pedal_event.is_set() and not skip_input_wait:
+            this_input = stdscr.getch()
+            if this_input in KEY_ENTER or this_input in KEY_SPACE:
+                direction = 1
+                break
+            elif this_input in KEY_BACKSPACE or this_input in KEY_UP:
+                direction = -1
+                break
+            elif this_input in KEY_ESCAPE:
+                stop = True
+                break
+        process.kill()
+        process.join()
+        current_patch_index += direction
+        if current_patch_index < 0:
+            if preferences.get_preference_value("allow_backtracking_in_performance_mode"):
+                current_file_index -= 1
+                if current_file_index < 0:
                     if preferences.get_preference_value("loop_performance_mode"):
-                        current_file_index = 0
-                    else:
                         current_file_index = len(performance_files) - 1
+                    else:
+                        current_file_index = 0
+            current_patch_index = 0
+        elif current_patch_index > len(this_int_patch_list):
+            # next file
+            current_patch_index = 0
+            current_file_index += 1
+            if current_file_index >= len(performance_files):
+                if preferences.get_preference_value("loop_performance_mode"):
+                    current_file_index = 0
+                else:
+                    current_file_index = len(performance_files) - 1
+    outport.close()
 
 
 def menu(stdscr: curses.window):

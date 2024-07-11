@@ -128,9 +128,66 @@ To enter a directory, select it with the `Enter` key.
 ### File selection
 Here, the file selection process will continue until you select a file. 
 
-**NOTE** Depending on the current action, only certain files will be shown. For example, when selecting a patch, only `.midipatch` files will be shown.
+**NOTE**: Depending on the current action, only certain files will be shown. For example, when selecting a patch, only `.midipatch` files will be shown.
 
 ### Folder selection
 No files are shown in this mode.
 
 To select a folder, enter the folder with the `Enter` key, then press `Select` to confirm your choice.
+
+To create a new folder, select `Create new folder` and enter the name of the folder. This will create a new folder in the current directory.
+
+## Patch/Config Creation/Editing
+This is where you can create and edit patches and configs. To get to this page, run the program and select `Patch/Config Editing`.
+### The basics
+In this controller, patches are the main way of playing sounds. A patch is a list of sounds to play, and a config is a list of keys and values that correspond to the sounds in your sound bank.
+
+When performing, a patch is loaded. This patch file contains the following:
+- The name of the patch (if not specified, the file name is used)
+- A config section, with support for adding in a preset. This is a list of keys and values, with the key being the alias and the value being the sound in question in your sound bank.
+- A list of sounds to play, in the order specified.
+
+A preset can be defined (an external config file), and the patch will use the keys from the preset and the keys from the config, with the preset's keys taking priority.
+
+### Sound bank numbers
+The Korg Kross 2 has 8 sound banks, each storing 16 sounds, for a total of 128.
+The banks are lettered A-H, and the numbers are numbered from 1-16.
+
+To convert a bank number to a sound number, use the formula `(bank_number - 1) * 16 + (sound_number - 1)`.
+
+*Some examples*:
+- The first sound in bank A is 0
+- The second sound in bank B is `(2 - 1) * 16 + (2 - 1) = 17`
+
+### Creating/Editing a patch
+Select the `Create/Edit patches` option. Then, select `Create a patch` to create a new patch, or `Edit a patch` to edit an existing patch.
+
+If a default preset is set, you will be asked if you want to use the preset. If you select `Yes`, the preset will be loaded alongside the patch's config.
+
+Then, select one of the following options:
+- `Edit patch config`: Edit the config section of the patch. This is where you can add presets, or change the keys/values of the patch.
+- `Edit patch list`: Edit the list of sounds to play in the patch. This is a list of sound aliases, or sound numbers in your sound bank.
+- `Back`: Save and return.
+
+#### Edit patch config
+See [Creating/Editing configs](#creatingediting-configs) for more information. There is an extra option: `add preset`, which will allow you to specify a config file to use as a preset. This defaults to `user_data_dir()/presets/{given name}`.
+
+#### Edit patch list
+This opens the list in an external editor (`nano`, unless specified in the Preferences).
+
+Follow the instructions given in the file. Comments start with a `#`.
+
+The first non-commented line is the title line, where the filename is filled in. Changing this changes the name of the patch.
+
+A list of usable sounds is given at the top of the file, and you can use these to specify the sounds in your patch. This is loaded from the config.
+Otherwise, you can use integers (`0 <= x <= 127`) to specify the sound in your sound bank.
+Put this list at the end of the file, separating each sound with a newline.
+
+If you want to add notes to a sound, add ` -- ` to the end of the sound, then write your note. This will be shown in the performance mode.
+When finished, save and exit the file. Your changes will be parsed and saved (`Control + S` then `Control + X` in `nano`)
+
+## Creating/Editing configs
+If you are creating a pure config file, you will be asked to either select an existing config file or create a new one.
+
+The default
+
