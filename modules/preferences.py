@@ -100,6 +100,8 @@ initial_preferences = [
     Preference("loop_performance_mode", bool, False,
                "Loop the performance mode list upon reaching the last patch? (Also applies to first patch and "
                "the [BEFORE] key if [allow_backtracking_in_performance_mode] is enabled)"),
+    Preference("switch_pedal_sensitivity", int, 10,
+               "The sensitivity of the switch pedal (1 - 100, default is 10)"),
 ]
 
 

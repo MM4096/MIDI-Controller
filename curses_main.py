@@ -29,8 +29,10 @@ YELLOW_TEXT = curses.color_pair(3)
 
 # region inputs
 
-KEY_UP = [65]
-KEY_DOWN = [66]
+KEY_UP = [65, 259]
+KEY_DOWN = [66, 258]
+KEY_LEFT = [68, 260]
+KEY_RIGHT = [67, 261]
 KEY_ENTER = [10, 13]
 KEY_BACKSPACE = [127, 263]
 KEY_SPACE = [32]
@@ -41,11 +43,18 @@ KEY_ESCAPE = [27]
 pedal_pressed = False
 
 
+def print_and_wait(stdscr: curses.window, text: str, wait_for_enter: bool = True):
+    stdscr.addstr(text)
+    stdscr.refresh()
+    if wait_for_enter:
+        stdscr.getch()
+
+
 def wait_for_switch_pedal(port: str, event):
     global pedal_pressed
-    with mido.open_input(port) as inport:
+    with (mido.open_input(port) as inport):
         for msg in inport:
-            if msg.type == "control_change" and msg.control == 82 and msg.value > 10:
+            if msg.type == "control_change" and msg.control == 82 and msg.value > int(preferences.get_preference_value("switch_pedal_sensitivity")):
                 event.set()
                 return
 
@@ -62,7 +71,7 @@ def is_port_connected(_port: str) -> bool:
 def fix_screen_size(stdscr: curses.window):
     while True:
         target_width = 100
-        target_height = 25
+        target_height = 30
         height, width = stdscr.getmaxyx()
 
         stdscr.erase()
@@ -169,7 +178,7 @@ def select_options(options: list[str], title: str, indicator: str = ">", default
 
 
 def select_options_multiple(options: list[str], title: str, indicator: str = ">", selected: str = "*") -> (
-        int, list[str]):
+int, list[str]):
     set_cursor_visibility(False)
     selected_options: list[bool] = []
     for i in options:
@@ -212,6 +221,30 @@ def select_options_multiple(options: list[str], title: str, indicator: str = ">"
                 selected_options[index] = not selected_options[index]
     set_cursor_visibility(True)
     return index, [options[i] for i in range(len(options) - 1) if selected_options[i]]
+
+
+def scroll_view(stdscr: curses.window, items: list[str], text_before: str = "", text_after: str = ""):
+    index = tools.clampi(7, 0, len(items) - 1)
+    while True:
+        stdscr.erase()
+        cut_options, start_index = tools.cut_array(items, index, 15)
+        has_options_before: bool = start_index > 0
+        has_options_after: bool = tools.is_sublist_with_more_elements(items, cut_options, start_index)
+        stdscr.addstr(text_before + "\n")
+        stdscr.addstr("/\\\n" if has_options_before else "\n")
+        for i in range(len(cut_options)):
+            stdscr.addstr(f" {cut_options[i]}\n")
+        if has_options_after:
+            stdscr.addstr("\\/")
+        stdscr.addstr("\n" + text_after)
+        stdscr.refresh()
+        this_input = stdscr.getch()
+        if this_input in KEY_UP:
+            index = tools.clampi(index - 1, 7, len(items) - 8)
+        elif this_input in KEY_DOWN:
+            index = tools.clampi(index + 1, 7, len(items) - 8)
+        elif this_input in KEY_ENTER:
+            break
 
 
 def set_up_preferences(stdscr, new_preferences: list[preferences.Preference]):
@@ -615,11 +648,7 @@ def performance_mode(stdscr: curses.window):
                 sort_list_by_numbering_system([i for i in file_manager.get_files_in_dir(folder_path) if
                                                i.endswith("midipatch")]), "Select patches to perform")[1]
             performance_files = [f"{folder_path}/{i}" for i in performance_files]
-            stdscr.clear()
-            stdscr.addstr(str(performance_files))
-            stdscr.refresh()
-            stdscr.getch()
-            performance_files = sort_list_by_numbering_system([f"{folder_path}/{i}" for i in performance_files], True)
+            performance_files = sort_list_by_numbering_system(performance_files)
             selected_files = True
             display_files = sort_list_by_numbering_system(performance_files, True)
         else:
@@ -627,10 +656,10 @@ def performance_mode(stdscr: curses.window):
         list_of_files = [i.split("/")[-1].replace(".midipatch", "") for i in display_files]
         stdscr.erase()
         stdscr.refresh()
-        index, option = select_options(["Yes", "No"], "Here's a list of files to perform. Is this OK?"
-                                                      "\n" + "\n".join(list_of_files), ">", 0)
-        if index == 0:
-            break
+        # index, option = select_options(["Yes", "No"], "Here's a list of files to perform. Is this OK?"
+        #                                               "\n" + "\n".join(list_of_files), ">", 0)
+        scroll_view(stdscr, list_of_files, "Files to perform:", "Press [Enter] to continue")
+        break
 
     index = 0
     if len(list_of_files) > 1:
@@ -656,11 +685,7 @@ def performance_mode(stdscr: curses.window):
     while not stop:
         set_cursor_visibility(False)
         skip_input_wait = False
-        # if not is_port_connected(preferred_port):
-        #     stdscr.clear()
-        #     stdscr.addstr("Keyboard disconnected/MIDI Connection lost. Waiting for a connection.")
-        #     while not is_port_connected(preferred_port):
-        #         pass
+
         current_file_path = performance_files[current_file_index]
         this_patch_list = patcher.parse_patch_from_file(current_file_path)
         this_int_patch_list = patcher.get_int_list(this_patch_list)
@@ -696,7 +721,7 @@ def performance_mode(stdscr: curses.window):
                 modifier = ">" if current_patch_index == i + starting_index else " "
                 stdscr.addstr(f" {modifier}  {cut_list[i]["sound"]}\n")
             if has_items_after:
-                stdscr.addstr("\\/")
+                stdscr.addstr("\\/\n")
             if current_patch_index >= len(this_int_patch_list):
                 if not preferences.get_preference_value("only_require_one_press_for_next_patch"):
                     pass
@@ -721,6 +746,8 @@ def performance_mode(stdscr: curses.window):
         process.start()
         stdscr.nodelay(True)
         stdscr.timeout(100)
+
+        arrow_direction: int = 0
         while not pedal_event.is_set() and not skip_input_wait:
             this_input = stdscr.getch()
             if this_input in KEY_ENTER or this_input in KEY_SPACE:
@@ -732,6 +759,20 @@ def performance_mode(stdscr: curses.window):
             elif this_input in KEY_ESCAPE:
                 stop = True
                 break
+
+            if this_input in KEY_LEFT:
+                if arrow_direction == -1:
+                    current_file_index = tools.clampi(current_file_index - 1, 0, len(performance_files) - 1)
+                    break
+                arrow_direction = -1
+            elif this_input in KEY_RIGHT:
+                if arrow_direction == 1:
+                    current_file_index = tools.clampi(current_file_index + 1, 0, len(performance_files) - 1)
+                    break
+                arrow_direction = 1
+        if pedal_event.is_set():
+            direction = 1
+
         process.kill()
         process.join()
         current_patch_index += direction
