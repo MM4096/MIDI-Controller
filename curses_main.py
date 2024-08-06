@@ -3,7 +3,6 @@ import json
 import multiprocessing
 import os
 import re
-import time
 from curses import wrapper
 from curses.textpad import Textbox
 import mido
@@ -733,7 +732,7 @@ def performance_mode(stdscr: curses.window):
                 stdscr.addstr("    [END OF PATCH LIST]")
             stdscr.addstr(f"\n\nNext patch: {next_patch_name}\n")
             stdscr.addstr("\n\n\n")
-            stdscr.addstr(f"Notes:\n{this_comment_list[clamped_index]}\n")
+            stdscr.addstr(f"Notes:\n\n\n{this_comment_list[clamped_index]}\n")
             stdscr.refresh()
             # endregion
 
@@ -750,7 +749,7 @@ def performance_mode(stdscr: curses.window):
         arrow_direction: int = 0
         while not pedal_event.is_set() and not skip_input_wait:
             this_input = stdscr.getch()
-            if this_input in KEY_ENTER or this_input in KEY_SPACE:
+            if this_input in KEY_ENTER or this_input in KEY_SPACE or this_input in KEY_DOWN:
                 direction = 1
                 break
             elif this_input in KEY_BACKSPACE or this_input in KEY_UP:
@@ -763,11 +762,13 @@ def performance_mode(stdscr: curses.window):
             if this_input in KEY_LEFT:
                 if arrow_direction == -1:
                     current_file_index = tools.clampi(current_file_index - 1, 0, len(performance_files) - 1)
+                    current_patch_index = -1
                     break
                 arrow_direction = -1
             elif this_input in KEY_RIGHT:
                 if arrow_direction == 1:
                     current_file_index = tools.clampi(current_file_index + 1, 0, len(performance_files) - 1)
+                    current_patch_index = -1
                     break
                 arrow_direction = 1
         if pedal_event.is_set():
