@@ -785,7 +785,10 @@ def performance_mode(stdscr: curses.window):
                         current_file_index = len(performance_files) - 1
                     else:
                         current_file_index = 0
-            current_patch_index = 0
+            current_file_path = performance_files[current_file_index]
+            this_patch_list = patcher.parse_patch_from_file(current_file_path)
+            this_int_patch_list = patcher.get_int_list(this_patch_list)
+            current_patch_index = len(this_int_patch_list) - 1
         elif current_patch_index > len(this_int_patch_list):
             # next file
             current_patch_index = 0
