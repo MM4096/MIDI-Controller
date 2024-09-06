@@ -49,6 +49,14 @@ def print_and_wait(stdscr: curses.window, text: str, wait_for_enter: bool = True
         stdscr.getch()
 
 
+def create_needed_files():
+    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir())
+    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches")
+    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/presets")
+    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
+    new_preferences = preferences.update_preferences()
+
+
 def wait_for_switch_pedal(port: str, event):
     global pedal_pressed
     with (mido.open_input(port) as inport):
@@ -275,16 +283,6 @@ def set_up_preferences(stdscr, new_preferences: list[preferences.Preference]):
             preferences.set_preference(preference.preference_name, True)
         else:
             preferences.set_preference(preference.preference_name, False)
-
-
-def create_needed_files(stdscr):
-    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir())
-    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches")
-    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches/presets")
-    file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
-    new_preferences = preferences.update_preferences()
-    if len(new_preferences) > 0:
-        set_up_preferences(stdscr, new_preferences)
 
 
 def set_cursor_visibility(visibility: bool):
@@ -803,7 +801,7 @@ def performance_mode(stdscr: curses.window):
 
 def menu(stdscr: curses.window):
     stdscr.erase()
-    create_needed_files(stdscr)
+    create_needed_files()
 
     fix_screen_size(stdscr)
 

@@ -106,6 +106,10 @@ initial_preferences = [
 
 
 def update_preferences() -> list[Preference]:
+    """
+    Updates the preferences file with any new preferences
+    :return: list of new preferences
+    """
     file = file_manager.get_user_data_dir() + "/preferences"
     if not os.path.exists(file):
         file_manager.write_data(json.dumps(Preference.to_json_array(initial_preferences), indent=4), file)
@@ -146,7 +150,11 @@ def get_preference_value(key):
     return get_preference(key).value
 
 
-def set_preferences(preference_list: list):
+def set_preferences(preference_list: list) -> None:
+    """
+    Writes the given preference list to the preferences file
+    :param preference_list: The list of preferences to write
+    """
     file = file_manager.get_user_data_dir() + "/preferences"
     with open(file, "w") as write:
         write.write(json.dumps(Preference.to_json_array(preference_list), indent=4))

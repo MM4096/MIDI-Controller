@@ -1,0 +1,47 @@
+Button {
+	height: 3;
+}
+
+.h1 {
+	text-style: bold;
+	text-align: center;
+	width: 100%;
+	margin-top: 1;
+	margin-bottom: 2;
+}
+
+OrderableListWidget {
+	margin-top: 1;
+	height: 75%;
+}
+
+OrderableListWidget ListItem {
+	padding: 1;
+	margin-top: 1;
+}
+
+#orderable_list_buttons {
+	margin-top: 1;
+	height: auto;
+}
+
+#orderable_list_buttons > Button {
+	width: 10%;
+}
+
+Vertical > Horizontal {
+	content-align: center middle;
+	align: center middle;
+	width: 100%;
+}
+
+Vertical > Horizontal > Button {
+	margin-left: 1;
+	margin-right: 1;
+	margin-bottom: 1;
+}
+
+PerformanceScreen > Vertical {
+	content-align: center middle;
+	align: center middle;
+}

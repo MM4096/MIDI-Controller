@@ -3,5 +3,5 @@
 # activate venv
 source .venv/bin/activate
 
-pyinstaller --onefile curses_main.py
-mv -f dist/curses_main dist/MIDI-Controller-linux
+pyinstaller --onefile main.py
+mv -f dist/main dist/MIDI-Controller-linux

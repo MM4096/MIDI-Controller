@@ -1,0 +1,20 @@
+FileSelectionScreen {
+	align: center middle;
+}
+
+#file_selection_dialog {
+	padding: 0 1;
+	width: 75%;
+	height: 75%;
+	border: thick black 80%;
+	background: $surface;
+}
+
+#file_selection_buttons {
+	content-align: center middle;
+	align: center middle;
+}
+
+#file_list {
+	height: 75%;
+}
