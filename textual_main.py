@@ -398,6 +398,12 @@ class PerformanceScreen(Screen):
 		if isinstance(patch_name, Label):
 			patch_name.update(f"Current Patch: {this_patch_name}")
 
+		next_patch_container = self.query_one("#patch_info")
+		if isinstance(next_patch_container, Vertical):
+			next_patch_container.remove_children()
+			new_label = Label(f"Next Patch: {next_patch_name}")
+			next_patch_container.mount(new_label)
+
 
 		def on_pedal_event():
 			self.action_next_patch()
