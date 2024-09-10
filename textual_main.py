@@ -8,7 +8,7 @@ from textual import on, events
 from textual.containers import Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen, ModalScreen
 from textual.widget import AwaitMount
-from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem
+from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select
 from textual.app import App, ComposeResult
 
 from modules import preferences, patcher
@@ -408,9 +408,7 @@ class PerformanceScreen(Screen):
 		def on_pedal_event():
 			self.action_next_patch()
 
-		if self.process is not None:
-			self.process.kill()
-			self.process.join()
+		self.kill_pedal_signal()
 
 		self.pedal_event.clear()
 		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal, args=(self.midi_port, self.pedal_event, self.pedal_queue))
@@ -434,7 +432,7 @@ class PerformanceScreen(Screen):
 
 			current_file = self.files[self.current_file_index]
 			this_patch_list = patcher.get_patch_list(current_file)
-			self.current_file_index = len(this_patch_list) - 1
+			self.current_patch_index = len(this_patch_list) - 1
 		self.update()
 
 	def action_next_patch_file(self) -> None:
@@ -454,7 +452,6 @@ class PerformanceScreen(Screen):
 	def wait_for_switch_pedal(self, port: str, event, queue: multiprocessing.Queue):
 		with (mido.open_input(port) as inport):
 			for msg in inport:
-				print("Message!")
 				if event.is_set():
 					return
 				if msg.type == "control_change" and msg.control == 82 and msg.value > int(preferences.get_preference_value("switch_pedal_sensitivity")):
@@ -469,6 +466,14 @@ class PerformanceScreen(Screen):
 		except Exception as e:
 			pass
 
+	def kill_pedal_signal(self):
+		if self.process is not None:
+			self.process.kill()
+			self.process.join()
+
+	def _on_unmount(self) -> None:
+		super()._on_unmount()
+		self.kill_pedal_signal()
 
 
 class PerformanceSetupScreen(Screen):
@@ -533,6 +538,32 @@ class PerformanceSetupScreen(Screen):
 		)
 
 
+#region patch/config editing
+class PatchConfigEditingMainScreen(Screen):
+	CSS_PATH = "css/patch_config_main.tcss"
+
+	def on_button_pressed(self, event: Button.Pressed) -> None:
+		if event.button.id == "back_to_menu":
+			app.push_screen("main")
+		elif event.button.id == "add_patch":
+			# app.push_screen(PatchConfigEditingScreen())
+			pass
+
+	def compose(self) -> ComposeResult:
+		yield Header()
+		yield Footer()
+		yield Vertical(
+			Label("Patch Config Editing", classes="h1"),
+			Horizontal(
+			),
+			Button("Create File", id="create"),
+			Select([], id="create_type").from_values(("Create Patch", "Create Config")),
+			Button("Edit File", id="edit"),
+			Button("Back to Menu", id="back_to_menu"),
+		)
+#endregion
+
+
 class MainScreen(Screen):
 	CSS_PATH = "css/main.tcss"
 	def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -540,6 +571,8 @@ class MainScreen(Screen):
 			app.push_screen("settings")
 		elif event.button.id == "performance":
 			app.push_screen("performance")
+		elif event.button.id == "patch_config":
+			app.push_screen("patch_config_main")
 
 
 	def compose(self) -> ComposeResult:
@@ -548,7 +581,7 @@ class MainScreen(Screen):
 		Label("Main Screen", classes="h1"),
 		yield Vertical(
 			Label("Main Screen", classes="h1"),
-			Button("Button 1", id="midi_device"),
+			Button("Patch/Config Editing", id="patch_config"),
 			Button("Performance", id="performance"),
 			Button("Settings", id="settings"),
 		)
@@ -569,6 +602,7 @@ class MainApp(App):
 	def on_mount(self) -> None:
 		self.install_screen(SettingsScreen(), name="settings")
 		self.install_screen(PerformanceSetupScreen(), name="performance")
+		self.install_screen(PatchConfigEditingMainScreen(), name="patch_config_main")
 		self.install_screen(MainScreen(), name="main")
 		self.push_screen("main")
 
