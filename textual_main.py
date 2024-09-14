@@ -1,7 +1,9 @@
 import multiprocessing
+import os
+import time
 from pathlib import PosixPath
 import threading
-from queue import Queue
+from queue import Queue, Empty
 
 import mido
 from textual import on, events
@@ -10,9 +12,12 @@ from textual.screen import Screen, ModalScreen
 from textual.widget import AwaitMount
 from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select
 from textual.app import App, ComposeResult
+from watchdog.events import FileSystemEventHandler, DirModifiedEvent, FileModifiedEvent
+from watchdog.observers import Observer
 
 from modules import preferences, patcher
-from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system
+from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
+	is_int
 from modules import file_manager
 
 
@@ -22,6 +27,8 @@ def create_needed_files():
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches")
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/presets")
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
+	with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
+		f.write("")
 	new_preferences = preferences.update_preferences()
 
 def get_main_port():
@@ -304,10 +311,10 @@ class ErrorScreen(ModalScreen):
 
 class PerformanceScreen(Screen):
 	BINDINGS = [
-		("space", "next_patch", "Next Patch"),
 		("backspace", "previous_patch", "Previous Patch"),
-		("l", "next_patch_file", "Next File"),
+		("space", "next_patch", "Next Patch"),
 		("a", "previous_patch_file", "Previous File"),
+		("l", "next_patch_file", "Next File"),
 	]
 
 	CSS_PATH = "css/performance_screen.tcss"
@@ -321,6 +328,8 @@ class PerformanceScreen(Screen):
 		self.process = None
 		self.pedal_event = multiprocessing.Event()
 		self.pedal_queue = multiprocessing.Queue()
+
+		app.performace_screen = self
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -352,6 +361,10 @@ class PerformanceScreen(Screen):
 				self.current_patch_index = button_id
 				self.update()
 				return
+
+	def set_patch_index(self, index: int):
+		self.current_patch_index = clampi(index, 0, len(patcher.get_patch_list(self.files[self.current_file_index])) - 1)
+		self.update()
 
 	def on_mount(self) -> None:
 		self.update()
@@ -404,10 +417,6 @@ class PerformanceScreen(Screen):
 			new_label = Label(f"Next Patch: {next_patch_name}")
 			next_patch_container.mount(new_label)
 
-
-		def on_pedal_event():
-			self.action_next_patch()
-
 		self.kill_pedal_signal()
 
 		self.pedal_event.clear()
@@ -450,7 +459,7 @@ class PerformanceScreen(Screen):
 		self.update()
 
 	def wait_for_switch_pedal(self, port: str, event, queue: multiprocessing.Queue):
-		with (mido.open_input(port) as inport):
+		with mido.open_input(port) as inport:
 			for msg in inport:
 				if event.is_set():
 					return
@@ -593,6 +602,8 @@ class MainApp(App):
 	BINDINGS = {
 	}
 
+	performace_screen: PerformanceScreen = None
+
 	def create_popup(self, popup_text: str, close_button_text: str) -> None:
 		def on_popup_dismissed(result: bool) -> None:
 			self.pop_screen()
@@ -606,8 +617,88 @@ class MainApp(App):
 		self.install_screen(MainScreen(), name="main")
 		self.push_screen("main")
 
+		self.set_interval(0.1, self.check_command_queue)
+
+	def check_command_queue(self) -> None:
+		try:
+			message = command_queue.get_nowait()
+			self.handle_command(message)
+		except Exception as e:
+			pass
+
+	def handle_command(self, command: str) -> None:
+		print(f"Received command: {command}")
+		command = command.strip().lower()
+		parts = command.split(" ")
+		if len(parts) == 0:
+			return
+
+		if parts[0] == "next_patch":
+			if self.performace_screen is not None:
+				self.performace_screen.action_next_patch()
+		elif parts[0] == "previous_patch":
+			if self.performace_screen is not None:
+				self.performace_screen.action_previous_patch()
+		elif parts[0] == "next_patch_file":
+			if self.performace_screen is not None:
+				self.performace_screen.action_next_patch_file()
+		elif parts[0] == "previous_patch_file":
+			if self.performace_screen is not None:
+				self.performace_screen.action_previous_patch_file()
+		elif parts[0] == "set_patch_index":
+			if len(parts) > 1:
+				if is_int(parts[1]):
+					self.performace_screen.set_patch_index(int(parts[1]))
+
+
+#region File Functions
+class CommandHandler(FileSystemEventHandler):
+	def __init__(self):
+		super().__init__()
+		self.commands_file = file_manager.get_user_data_dir() + "/commands.txt"
+		self.cached_file_contents: list = []
+
+	def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
+		if event.src_path == str(file_manager.get_user_data_dir()):
+			with open(self.commands_file, 'r') as file:
+				lines = [i.rstrip() for i in file.readlines()]
+				if lines and lines != self.cached_file_contents:
+					self.cached_file_contents = lines
+					command = lines[-1].strip()
+					command_queue.put(command)
+				elif not lines:
+					self.cached_file_contents = []
+				else:
+					return
+
+
+def run_observer():
+	event_handler = CommandHandler()
+	observer = Observer()
+	observer.schedule(event_handler, file_manager.get_user_data_dir(), recursive=False)
+	observer.start()
+
+	try:
+		while True:
+			# make sure the process doesn't finish
+			time.sleep(1)
+	except KeyboardInterrupt:
+		observer.stop()
+	finally:
+		observer.stop()
+		observer.join()
+#endregion
 
 if __name__ == "__main__":
 	create_needed_files()
 	app = MainApp()
+
+	command_manager = multiprocessing.Manager()
+	command_queue = command_manager.Queue()
+	observer_process = multiprocessing.Process(target=run_observer)
+	observer_process.start()
+
 	app.run()
+
+	observer_process.terminate()
+	observer_process.join()
