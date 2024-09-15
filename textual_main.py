@@ -504,7 +504,7 @@ class PerformanceScreen(Screen):
 		this_comment_list = patcher.get_comment_list(this_patch_file)
 		this_patch_name = this_patch_file["patch_name"]
 
-		new_message = (f"performance_update<~separator~>{current_file}<~separator~>{self.files}<~separator~>"
+		new_message = (f"performance_update<~separator~>{current_file}<~separator~>{json.dumps(self.files)}<~separator~>"
 					   f"{json.dumps(this_patch_list)}<~separator~>{this_patch_name}<~separator~>"
 					   f"{self.current_patch_index}")
 
@@ -675,6 +675,12 @@ class MainApp(App):
 			if len(parts) > 1:
 				if is_int(parts[1]):
 					self.performance_screen.set_patch_index(int(parts[1]))
+		elif parts[0] == "clear_commands_file":
+			with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
+				f.write("")
+		elif parts[0] == "clear_output_file":
+			with open(file_manager.get_user_data_dir() + "/output.txt", "w") as f:
+				f.write("")
 
 
 #region File Functions

@@ -15,6 +15,11 @@ To send commands, append to the `commands.txt` file found in the application's d
 *`commands.txt` gets cleared on application start, and technically, it is safe to delete all the contents of this file at any point.*
 
 ## List of commands:
+### General Commands
+These commands are available in all modes.
+- `clear_commands_file`: Deletes the contents of the `commands.txt` file.
+- `clear_output_file`: Deletes the contents of the `output.txt` file.
+
 ### Performance Mode
 The following commands are only available in Performance Mode. If performance mode is not enabled, these commands do nothing.
 - `next_patch`: Progresses to the next patch in the current list. *Equivalent to `action_next_patch()`*.
