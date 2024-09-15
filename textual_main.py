@@ -678,41 +678,37 @@ class MainApp(App):
 
 
 #region File Functions
-class CommandHandler(FileSystemEventHandler):
-	def __init__(self):
-		super().__init__()
-		self.commands_file = file_manager.get_user_data_dir() + "/commands.txt"
-		self.cached_file_contents: list = []
-
-	def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
-		if event.src_path == str(file_manager.get_user_data_dir()):
-			with open(self.commands_file, 'r') as file:
-				lines = [i.rstrip() for i in file.readlines()]
-				if lines and lines != self.cached_file_contents:
-					self.cached_file_contents = lines
-					command = lines[-1].strip()
-					command_queue.put(command)
-				elif not lines:
-					self.cached_file_contents = []
-				else:
-					return
-
-
 def run_observer():
-	event_handler = CommandHandler()
-	observer = Observer()
-	observer.schedule(event_handler, file_manager.get_user_data_dir(), recursive=False)
-	observer.start()
+	cached_lines = []
+	while True:
+		if os.path.exists(file_manager.get_user_data_dir() + "/commands.txt"):
+			with open(file_manager.get_user_data_dir() + "/commands.txt", "r") as f:
+				lines = f.readlines()
+				if not lines:
+					cached_lines = []
+					continue
+				elif lines == cached_lines:
+					continue
 
-	try:
-		while True:
-			# make sure the process doesn't finish
-			time.sleep(1)
-	except KeyboardInterrupt:
-		observer.stop()
-	finally:
-		observer.stop()
-		observer.join()
+				different_lines = []
+				difference_found = False
+				for index in range(len(lines)):
+					if index >= len(cached_lines):
+						different_lines.append(lines[index])
+						difference_found = True
+					elif difference_found:
+						different_lines.append(lines[index])
+					elif lines[index] != cached_lines[index]:
+						different_lines.append(lines[index])
+						difference_found = True
+
+				cached_lines = lines
+				for line in different_lines:
+					command_queue.put(line)
+		else:
+			cached_lines = []
+
+		time.sleep(0.1)
 #endregion
 
 if __name__ == "__main__":
