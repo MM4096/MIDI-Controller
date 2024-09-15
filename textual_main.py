@@ -1,3 +1,4 @@
+import json
 import multiprocessing
 import os
 import time
@@ -29,12 +30,18 @@ def create_needed_files():
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
 	with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
 		f.write("")
+	with open(file_manager.get_user_data_dir() + "/output.txt", "w") as f:
+		f.write("")
 	new_preferences = preferences.update_preferences()
 
 def get_main_port():
 	with open(file_manager.get_user_data_dir() + "/main_port.data", "r") as f:
 		return f.read()
 
+
+def add_to_output(message: str):
+	with open(file_manager.get_user_data_dir() + "/output.txt", "a") as f:
+		f.write(message + "\n")
 #endregion
 
 
@@ -329,7 +336,9 @@ class PerformanceScreen(Screen):
 		self.pedal_event = multiprocessing.Event()
 		self.pedal_queue = multiprocessing.Queue()
 
-		app.performace_screen = self
+		app.performance_screen = self
+
+		add_to_output("performance_started")
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -423,6 +432,8 @@ class PerformanceScreen(Screen):
 		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal, args=(self.midi_port, self.pedal_event, self.pedal_queue))
 		self.process.start()
 
+		self.write_state()
+
 	def action_next_patch(self):
 		self.current_patch_index += 1
 		if self.current_patch_index >= len(patcher.get_patch_list(self.files[self.current_file_index])):
@@ -483,6 +494,21 @@ class PerformanceScreen(Screen):
 	def _on_unmount(self) -> None:
 		super()._on_unmount()
 		self.kill_pedal_signal()
+		add_to_output("performance_stopped")
+
+	def write_state(self) -> None:
+		current_file = self.files[self.current_file_index]
+		this_patch_list = patcher.get_patch_list(current_file)
+		this_patch_file = patcher.parse_patch_from_file(current_file)
+		this_int_patch_list = patcher.get_int_list(this_patch_file)
+		this_comment_list = patcher.get_comment_list(this_patch_file)
+		this_patch_name = this_patch_file["patch_name"]
+
+		new_message = (f"performance_update<~separator~>{current_file}<~separator~>{self.files}<~separator~>"
+					   f"{json.dumps(this_patch_list)}<~separator~>{this_patch_name}<~separator~>"
+					   f"{self.current_patch_index}")
+
+		add_to_output(new_message)
 
 
 class PerformanceSetupScreen(Screen):
@@ -602,7 +628,7 @@ class MainApp(App):
 	BINDINGS = {
 	}
 
-	performace_screen: PerformanceScreen = None
+	performance_screen: PerformanceScreen = None
 
 	def create_popup(self, popup_text: str, close_button_text: str) -> None:
 		def on_popup_dismissed(result: bool) -> None:
@@ -634,21 +660,21 @@ class MainApp(App):
 			return
 
 		if parts[0] == "next_patch":
-			if self.performace_screen is not None:
-				self.performace_screen.action_next_patch()
+			if self.performance_screen is not None:
+				self.performance_screen.action_next_patch()
 		elif parts[0] == "previous_patch":
-			if self.performace_screen is not None:
-				self.performace_screen.action_previous_patch()
+			if self.performance_screen is not None:
+				self.performance_screen.action_previous_patch()
 		elif parts[0] == "next_patch_file":
-			if self.performace_screen is not None:
-				self.performace_screen.action_next_patch_file()
+			if self.performance_screen is not None:
+				self.performance_screen.action_next_patch_file()
 		elif parts[0] == "previous_patch_file":
-			if self.performace_screen is not None:
-				self.performace_screen.action_previous_patch_file()
+			if self.performance_screen is not None:
+				self.performance_screen.action_previous_patch_file()
 		elif parts[0] == "set_patch_index":
 			if len(parts) > 1:
 				if is_int(parts[1]):
-					self.performace_screen.set_patch_index(int(parts[1]))
+					self.performance_screen.set_patch_index(int(parts[1]))
 
 
 #region File Functions

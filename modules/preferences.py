@@ -102,6 +102,10 @@ initial_preferences = [
                "the [BEFORE] key if [allow_backtracking_in_performance_mode] is enabled)"),
     Preference("switch_pedal_sensitivity", int, 10,
                "The sensitivity of the switch pedal (1 - 100, default is 10)"),
+    Preference("do_command_file_listener", bool, True,
+              "Whether the program should accept commands from `commands.txt`"),
+    Preference("do_output_file", bool, True,
+               "Whether output from the program should be written to `output.txt`"),
 ]
 
 
