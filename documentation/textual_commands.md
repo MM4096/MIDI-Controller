@@ -43,25 +43,71 @@ To receive commands, read the `output.txt` file found in the application's data 
 *`output.txt` gets cleared on application start, and it is safe to delete the contents of this file at any time, given the receiver can handle this*.
 
 ## List of Messages:
-| **Message**           | **Description**                                                                                          |
-|-----------------------|----------------------------------------------------------------------------------------------------------|
-| `performance_started` | Emitted when a new performance is started. Specifically, when `PerformanceScreen` is mounted.            |
-| `performance_ended`   | Emitted when a performance is ended. Specifically, when `PerformanceScreen` is unmounted.                |
-| `performance_updated` | Emitted when the performance patch is updated, either from pedal inputs or from the `commands.txt` file. | 
+| **Message**                 | **Description**                                                                               |
+|-----------------------------|-----------------------------------------------------------------------------------------------|
+| `performance_started`       | Emitted when a new performance is started. Specifically, when `PerformanceScreen` is mounted. |
+| `performance_ended`         | Emitted when a performance is ended. Specifically, when `PerformanceScreen` is unmounted.     |
+| `performance_patch_changed` | Emitted when the current patch is changed through *any* means.                                |
+| `performance_file_changed`  | Emitted when the current file is changed through *any* means                                  |
 
 
 ## Specifics
 This section will detail the specifics of more complicated messages, and what they mean.
 
-### performance_updated
-This is emitted when the `update()` function is called on `PerformanceScreen`, usually from performance progression.
+### `performance_started`
+This is emitted when the `PerformanceScreen` is mounted.
 
 #### Syntax:
-`performance_updated<~separator~>[current_file_path: str]<~separator~>[file_list: list[str]]<~separator~>[current_patch_list: list]<~separator~>[current_patch_name: str]<~separator~>[current_patch_index: int]`
+`performance_updated<~separator~>[file_list: list[str]]`
 
-#### Args:
-- `current_file_path: str`: The local path of the patch file (absolute)
-- `file_list: list[str]`: A list of paths for the current performance, in performance order
-- `current_patch_list: list`: The current patch list, a dumped `json` object containing a list of the format `{sound: [sound: str], comments: [comments: str]}`
-- `current_patch_index: str`: The name of the current patch list
-- `current_patch_index: int`: The index of the currently-selected patch
+##### Args:
+- `file_list: list[str]`: A list of paths of the current performance, relative to the patch directory
+
+### `performance_ended`
+Emitted when the performance has ended.
+#### Syntax:
+`performance_ended`
+##### Args:
+None
+
+### `performance_patch_changed`
+Emitted when the current patch index is changed through *any* means.
+
+#### Syntax:
+`performance_patch_chamged<~separator~>[new_index: int]`
+
+##### Args:
+- `new_index: int`: the new selected index
+
+### `performance_file_changed`
+Emitted when the current file index is changed through *any* means (even on performance start!)
+
+#### Syntax:
+`performance_file_changed<~separator~>[new_index: int]<~separator~>[new_patch_list: list[str]]<~separator~>[new_comments_list: list[str]]`
+
+##### Args:
+- `new_index: int`: the new selected file index
+- `new_patch_list: list[str]`: the names of the sounds in the new patch (*not* the integers)
+- `new_comments_list: list[str]`: the list of comments of the new patch 
+
+[//]: # (### `performance_updated`)
+
+[//]: # (This is emitted when the `update&#40;&#41;` function is called on `PerformanceScreen`, usually from performance progression.)
+
+[//]: # ()
+[//]: # (#### Syntax:)
+
+[//]: # (`performance_updated<~separator~>[current_file_path: str]<~separator~>[file_list: list[str]]<~separator~>[current_patch_list: list]<~separator~>[current_patch_name: str]<~separator~>[current_patch_index: int]`)
+
+[//]: # ()
+[//]: # (#### Args:)
+
+[//]: # (- `current_file_path: str`: The local path of the patch file &#40;absolute&#41;)
+
+[//]: # (- `file_list: list[str]`: A list of paths for the current performance, in performance order)
+
+[//]: # (- `current_patch_list: list`: The current patch list, a dumped `json` object containing a list of the format `{sound: [sound: str], comments: [comments: str]}`)
+
+[//]: # (- `current_patch_index: str`: The name of the current patch list)
+
+[//]: # (- `current_patch_index: int`: The index of the currently-selected patch)

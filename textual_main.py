@@ -336,9 +336,13 @@ class PerformanceScreen(Screen):
 		self.pedal_event = multiprocessing.Event()
 		self.pedal_queue = multiprocessing.Queue()
 
+		self.cached_patch_index = -1
+		self.cached_file_index = -1
+
 		app.performance_screen = self
 
-		add_to_output("performance_started")
+		add_to_output(f"performance_started<~separator~>"
+					  f"{json.dumps([file_manager.remove_patch_directory_from_patch(i) for i in self.files])}")
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -432,7 +436,15 @@ class PerformanceScreen(Screen):
 		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal, args=(self.midi_port, self.pedal_event, self.pedal_queue))
 		self.process.start()
 
-		self.write_state()
+		if self.cached_file_index != self.current_file_index:
+			add_to_output(f"performance_file_changed<~separator~>{self.current_file_index}<~separator~>"
+						  f"{json.dumps([i["sound"] for i in this_patch_list])}<~separator~>{json.dumps(this_comment_list)}")
+			self.cached_patch_index = -1
+		if self.cached_patch_index != self.current_patch_index:
+			add_to_output(f"performance_patch_changed<~separator~>{self.current_patch_index}")
+
+		self.cached_file_index = self.current_file_index
+		self.cached_patch_index = self.current_patch_index
 
 	def action_next_patch(self):
 		self.current_patch_index += 1
@@ -494,21 +506,7 @@ class PerformanceScreen(Screen):
 	def _on_unmount(self) -> None:
 		super()._on_unmount()
 		self.kill_pedal_signal()
-		add_to_output("performance_stopped")
-
-	def write_state(self) -> None:
-		current_file = self.files[self.current_file_index]
-		this_patch_list = patcher.get_patch_list(current_file)
-		this_patch_file = patcher.parse_patch_from_file(current_file)
-		this_int_patch_list = patcher.get_int_list(this_patch_file)
-		this_comment_list = patcher.get_comment_list(this_patch_file)
-		this_patch_name = this_patch_file["patch_name"]
-
-		new_message = (f"performance_update<~separator~>{current_file}<~separator~>{json.dumps(self.files)}<~separator~>"
-					   f"{json.dumps(this_patch_list)}<~separator~>{this_patch_name}<~separator~>"
-					   f"{self.current_patch_index}")
-
-		add_to_output(new_message)
+		add_to_output("performance_ended")
 
 
 class PerformanceSetupScreen(Screen):
