@@ -481,6 +481,15 @@ class PerformanceScreen(Screen):
 		self.current_patch_index = 0
 		self.update()
 
+	def go_to_file(self, file: int) -> None:
+		if file < 0:
+			file = 0
+		elif file >= len(self.files):
+			file = len(self.files) - 1
+		self.current_file_index = file
+		self.current_patch_index = 0
+		self.update()
+
 	def wait_for_switch_pedal(self, port: str, event, queue: multiprocessing.Queue):
 		with mido.open_input(port) as inport:
 			for msg in inport:
@@ -673,6 +682,10 @@ class MainApp(App):
 			if len(parts) > 1:
 				if is_int(parts[1]):
 					self.performance_screen.set_patch_index(int(parts[1]))
+		elif parts[0] == "set_file_index":
+			if len(parts) > 1:
+				if is_int(parts[1]):
+					self.performance_screen.go_to_file(int(parts[1]))
 		elif parts[0] == "clear_commands_file":
 			with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
 				f.write("")
@@ -728,3 +741,5 @@ if __name__ == "__main__":
 
 	observer_process.terminate()
 	observer_process.join()
+
+	add_to_output("performance_ended")

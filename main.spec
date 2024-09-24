@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['curses_main.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['mido.backends.rtmidi'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='curses_main',
+    name='main',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

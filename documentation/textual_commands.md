@@ -27,6 +27,7 @@ The following commands are only available in Performance Mode. If performance mo
 - `next_patch_file`: Progresses to the next patch *file*. Equivalent to `action_next_patch_file()`
 - `previous_patch_file`: Jumps back to the previous patch *file*. Equivalent to `action_previous_patch()`
 - `set_patch_index [index: int]`: Sets the current patch index to `index`. If `index` is not given or is not an integer, nothing happens.
+- `set_file_index [index: int]`: Sets the current file index to `index`. If `index` is not an integer or not given, nothing happens.
 
 
 ## Notes and Warnings
