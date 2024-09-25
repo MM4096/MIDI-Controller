@@ -1,0 +1,20 @@
+ErrorScreen {
+	align: center middle;
+}
+
+ErrorScreen .popup {
+	width: 50%;
+	height: 50%;
+	align: center middle;
+	/*content-align: center middle;*/
+}
+
+ErrorScreen #close_popup {
+	align: center middle;
+	width: 75%;
+}
+
+ErrorScreen .error_label {
+	width: 75%;
+	text-align: center;
+}

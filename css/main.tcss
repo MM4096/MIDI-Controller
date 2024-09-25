@@ -1,0 +1,23 @@
+.h1 {
+	text-style: bold;
+	text-align: center;
+}
+
+Button {
+	align: center middle;
+	width: 25%;
+}
+
+MainScreen > Vertical {
+	content-align: center middle;
+	align: center middle;
+}
+
+MainScreen .h1 {
+	width: 25%;
+	margin-bottom: 2;
+}
+
+.error {
+	color: red;
+}

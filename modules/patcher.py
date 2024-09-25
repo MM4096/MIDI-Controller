@@ -123,7 +123,7 @@ def get_available_presets(path: str) -> list:
     patch_config = get_config_list_from_patch(path)
     if "preset" in patch_config:
         preset = patch_config["preset"]
-        preset_path = f"{file_manager.get_user_data_dir()}/patches/presets/{preset}.midiconfig"
+        preset_path = f"{file_manager.get_user_data_dir()}/presets/{preset}.midiconfig"
         result = parse_preset(preset_path)
         for key in result:
             patch_config[key] = result[key]
@@ -138,7 +138,7 @@ def get_int_list(data: dict) -> list:
     patch_list = data["patch_list"]
     if "preset" in patch_config:
         preset = patch_config["preset"]
-        preset_path = f"{file_manager.get_user_data_dir()}/patches/presets/{preset}.midiconfig"
+        preset_path = f"{file_manager.get_user_data_dir()}/presets/{preset}.midiconfig"
         result = parse_preset(preset_path)
         for key in result:
             patch_config[key] = result[key]
@@ -201,7 +201,7 @@ def compile_patch(config: dict, patch_list: list, patch_name: str) -> str:
 
 def convert_legacy_format_to_new_format_sound_list(filepath: str):
     """
-    Modifies the old patch list method of "array of sounds" to "array of dictionaries with sounds and comments
+    Modifies the old patch list method of "array of sounds" to "array of dictionaries with sounds and comments"
     :param filepath: path of file to edit
     """
     current_data: dict = parse_patch_from_file(filepath)

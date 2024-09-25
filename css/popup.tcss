@@ -1,0 +1,15 @@
+PopupScreen {
+	align: center middle;
+}
+
+.popup {
+	padding: 0 1;
+	width: 50%;
+	height: 50%;
+	border: thick black 80%;
+	background: $surface;
+}
+
+.prompt {
+	align: center middle;
+}

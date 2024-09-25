@@ -1,3 +1,7 @@
+import os
+import re
+
+
 def clamp(_n: float, _min: float, _max: float) -> float:
     """
     Clamp a number between a minimum and maximum value.
@@ -71,3 +75,67 @@ def is_sublist_with_more_elements(init_array: list, cut_array: list, start_cut_a
     else:
         return False
 
+
+def is_recognized_boolean(value: str) -> bool:
+    """
+    Checks whether a string is a recognized boolean value
+    :param value: the string to be evaluated
+    :return: whether the string is a recognized boolean value or not
+    """
+    if value.lower() in ["true", "false", "t", "f", "yes", "no", "y", "n", "1", "0"]:
+        return True
+    else:
+        return False
+
+
+def convert_string_to_boolean(value: str) -> bool:
+    """
+    Converts a string to a boolean
+    :param value: the string to be converted
+    :return: the boolean value
+    """
+    if value.lower() in ["true", "t", "yes", "y", "1"]:
+        return True
+    elif value.lower() in ["false", "f", "no", "n", "0"]:
+        return False
+    else:
+        raise ValueError("String is not a recognized boolean value")
+
+
+def parse_filename(filename) -> (float, str, str, str):
+    """
+    INTERNAL USE ONLY
+    :param filename: the filename to be parsed
+    :return: a tuple containing the parsed filename components
+    """
+    # Regex to match the filename components
+    match = re.match(r'(\d+)?([a-zA-Z])? (.*)\.(.*)', filename)
+    if match:
+        number = int(match.group(1)) if match.group(1) else float('inf')  # Use infinity for missing numbers
+        letter = match.group(2) if match.group(2) else ''
+        name = match.group(3)
+        extension = match.group(4)
+        return number, letter, name, extension
+    else:
+        # Handle files that don't match the expected pattern
+        return float('inf'), '', filename, ''
+
+
+def sort_list_by_numbering_system(str_list: list, return_only_filenames: bool = False, add_tab: bool = False) -> list:
+    """
+    Sorts a list of filenames by a numbering system
+    :param str_list: the list of filenames to be sorted
+    :param return_only_filenames: whether to return only the filenames or the full paths
+    :param add_tab: whether to add a tab between the name and the extension
+    :return: the sorted list of filenames
+    """
+    dirnames = [os.path.dirname(file) for file in str_list]
+    filenames = [os.path.basename(file) for file in str_list]
+    parsed_files = [parse_filename(file) for file in filenames]
+    sorted_files = sorted(parsed_files, key=lambda x: (x[0], x[1], x[2]))
+
+    recomposed_files = [
+        ''.join([f"{x[0]}" if x[0] != float('inf') else '', x[1], f" {'\t' if add_tab else ''}{x[2]}.{x[3]}"]).strip()
+        for x in sorted_files]
+    recomposed_directories = [f"{dirnames[i]}/{recomposed_files[i]}" for i in range(len(recomposed_files))]
+    return recomposed_files if return_only_filenames else recomposed_directories

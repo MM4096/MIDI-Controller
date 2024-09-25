@@ -1,0 +1,46 @@
+#settings_buttons {
+	height: auto;
+	content-align: center middle;
+	align: center middle;
+}
+
+#settings_buttons > Button {
+	margin: 1;
+}
+
+.h1 {
+	margin-top: 3;
+	align: center middle;
+	width: 100%;
+	text-style: bold;
+	text-align: center;
+}
+
+.preference {
+	align: center middle;
+	margin: 1;
+	height: 3;
+}
+
+.preference > Label {
+	text-align: right;
+	content-align-vertical: middle;
+	width: 50%;
+	height: 100%;
+}
+
+.preference > Input {
+	align: center middle;
+	width: 50%;
+	height: 100%;
+}
+
+#preferences {
+	margin: 3;
+	border: green 80%;
+}
+
+#settings_error {
+	text-align: center;
+	width: 100%;
+}

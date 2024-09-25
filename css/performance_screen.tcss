@@ -1,0 +1,31 @@
+#performance_screen {
+}
+
+#patch_list {
+	width: 100%;
+	border: thick black 80%;
+	background: $surface;
+}
+
+#patch_list Button {
+	background: $surface-lighten-2;
+	width: 100%;
+}
+
+.selected_patch {
+	background: $primary !important;
+}
+
+#patch_comments {
+	width: 100%;
+	height: 75%;
+	border: thick black 80%;
+	background: $surface-darken-1;
+}
+
+#patch_info {
+	width: 100%;
+	height: 25%;
+	border: thick black 80%;
+	background: $surface-lighten-1;
+}
