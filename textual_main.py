@@ -119,11 +119,12 @@ class OrderableListWidget(Static):
 class FileSelectionScreen(ModalScreen[str]):
 	CSS_PATH = "css/file_selection.tcss"
 
-	def __init__(self, path: str, select_files: bool = True):
+	def __init__(self, path: str, select_files: bool = True, window_title: str = "File Selection Screen"):
 		super().__init__()
 		self.path = path
 		self.selected_path = ""
 		self.is_selecting_file = select_files
+		self.window_title = window_title
 
 	def on_button_pressed(self, event: Button.Pressed) -> None:
 		if event.button.id == "close_popup":
@@ -136,7 +137,7 @@ class FileSelectionScreen(ModalScreen[str]):
 		yield Header()
 		yield Footer()
 		yield Vertical(
-			Label("File Selection Screen", classes="h1"),
+			Label(self.window_title, classes="h1"),
 			VerticalScroll(
 				DirectoryTree(path=self.path),
 				id="file_list"),
@@ -647,6 +648,10 @@ class PatchConfigEditingScreen(Screen):
 				config[alias[i]] = banks[i]
 
 			if self.edit_patch:
+				name_text = self.query_one("#name_input").value
+				if name_text != "":
+					self.patch_name = name_text
+
 				patch_content = self.query_one("#patch_content")
 				patch_text = patch_content.text.split("\n")
 				patch_list = []
@@ -733,8 +738,9 @@ class PatchConfigEditingMainScreen(Screen):
 		yield Vertical(
 			Label("Patch Config Editing", classes="h1"),
 			Horizontal(
-				Button("Create File", id="create"),
 				Select([], id="create_type").from_values(("Create Patch", "Create Config")),
+				Input("", id="name_input", placeholder="Enter the name of patch/config", tooltip="No extensions are needed"),
+				Button("Create File", id="create"),
 			),
 			Button("Edit File", id="edit"),
 			Button("Back to Menu", id="back_to_menu"),
@@ -744,20 +750,36 @@ class PatchConfigEditingMainScreen(Screen):
 		if event.button.id == "back_to_menu":
 			app.push_screen("main")
 		elif event.button.id == "create":
-			if self.query_one("Select").value == "Create Patch":
-				print("Patch")
-			elif self.query_one("Select").value == "Create Config":
-				print("Config")
+			self.app.push_screen(FileSelectionScreen(
+				file_manager.get_patch_directory() if self.query_one("Select").value == "Create Patch"
+					else file_manager.get_config_directory(), select_files=False,
+				window_title="Select folder to place patch in"), self.file_selected_create)
 		elif event.button.id == "edit":
 			self.app.push_screen(FileSelectionScreen(file_manager.get_user_data_dir(), select_files=True),
-								 self.file_selected)
+								 self.file_selected_edit)
 
-	def file_selected(self, path: PosixPath):
+	def file_selected_edit(self, path: PosixPath):
 		extension = str(path).split(".")[-1]
 		if extension not in ["midipatch", "midiconfig"]:
 			self.app.push_screen(ErrorScreen("Invalid file type. Please select a .midipatch or .midiconfig file."))
 			return
 		app.push_screen(PatchConfigEditingScreen(str(path), extension == "midipatch"))
+
+	def file_selected_create(self, path: PosixPath):
+		full_path = str(path) + "/" + self.query_one("#name_input").value
+		if self.query_one("Select").value == "Create Patch":
+			full_path += ".midipatch"
+			if os.path.exists(full_path):
+				self.app.push_screen(ErrorScreen("Patch already exists. Please select a different name."))
+				return
+			patcher.write_data(patcher.compile_patch({}, [], self.query_one("#name_input").value), full_path)
+		elif self.query_one("Select").value == "Create Config":
+			full_path += ".midiconfig"
+			if os.path.exists(full_path):
+				self.app.push_screen(ErrorScreen("Config already exists. Please select a different name."))
+				return
+			patcher.write_data(json.dumps({}), full_path)
+		self.app.push_screen(PatchConfigEditingScreen(full_path))
 #endregion
 
 

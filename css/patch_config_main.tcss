@@ -5,3 +5,7 @@ Button {
 Select {
 	width: 25%;
 }
+
+Input {
+	width: 40%;
+}

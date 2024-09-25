@@ -13,6 +13,9 @@ def get_file_path(file_name) -> str:
 def get_patch_directory() -> str:
     return get_user_data_dir() + "/" + "patches"
 
+def get_config_directory() -> str:
+    return get_user_data_dir() + "/" + "configs"
+
 
 def write_data(data: str, file_path: str):
     if os.path.exists(file_path):
