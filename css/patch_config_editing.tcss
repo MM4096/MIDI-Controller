@@ -1,0 +1,11 @@
+Button {
+	width: 25%;
+}
+
+Select {
+	width: 25%;
+}
+
+TabbedContent {
+	height: 50%;
+}

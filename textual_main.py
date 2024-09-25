@@ -11,12 +11,15 @@ from textual import on, events
 from textual.containers import Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen, ModalScreen
 from textual.widget import AwaitMount
-from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select
+from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select, \
+	TextArea, TabbedContent, TabPane
 from textual.app import App, ComposeResult
 from watchdog.events import FileSystemEventHandler, DirModifiedEvent, FileModifiedEvent
 from watchdog.observers import Observer
 
+from main import edit_patch
 from modules import preferences, patcher
+from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
 	is_int
 from modules import file_manager
@@ -147,11 +150,13 @@ class FileSelectionScreen(ModalScreen[str]):
 
 	@on(DirectoryTree.DirectorySelected)
 	def dir_selected(self, selected_dir: DirectoryTree.DirectorySelected):
-		self.selected_path = selected_dir.path
+		if not self.is_selecting_file:
+			self.selected_path = selected_dir.path
 
 	@on(DirectoryTree.FileSelected)
 	def file_selected(self, selected_file: DirectoryTree.FileSelected):
-		self.selected_path = selected_file.path
+		if self.is_selecting_file:
+			self.selected_path = selected_file.path
 
 
 class PopupScreen(Screen[bool]):
@@ -312,6 +317,29 @@ class ErrorScreen(ModalScreen):
 			Label("ERROR", classes="h1 error error_label"),
 			Label(self.error_message, classes="h1 error_label"),
 			Button("Close", id="close_popup"),
+			classes="popup",
+	)
+
+
+class WarningScreen(ModalScreen[bool]):
+	CSS_PATH = "css/warning.tcss"
+
+	def __init__(self, warning_message: str):
+		super().__init__()
+		self.warning_message = warning_message
+
+	def on_button_pressed(self, event: Button.Pressed) -> None:
+		if event.button.id == "close_popup":
+			self.dismiss(False)
+		elif event.button.id == "submit_popup":
+			self.dismiss(True)
+
+	def compose(self) -> ComposeResult:
+		yield Vertical(
+			Label("WARNING", classes="h1 warning warning_label"),
+			Label(self.warning_message, classes="h1 warning_label"),
+			Button("Proceed Anyways", id="submit_popup"),
+			Button("Cancel", id="close_popup"),
 			classes="popup",
 	)
 
@@ -581,6 +609,114 @@ class PerformanceSetupScreen(Screen):
 
 
 #region patch/config editing
+class PatchConfigEditingScreen(Screen):
+	CSS_PATH = "css/patch_config_editing.tcss"
+
+	def __init__(self, path: str, edit_patch: bool = True):
+		super().__init__()
+		self.edit_patch = edit_patch
+		self.path = path
+
+		if edit_patch:
+			patch = patcher.parse_patch_from_file(path)
+			self.patch_name = patch["patch_name"]
+			self.config = patch["patch_config"]
+			self.patch_list = patch["patch_list"]["list"]
+		else:
+			self.config = parse_preset(path)
+
+	def on_button_pressed(self, event: Button.Pressed) -> None:
+		if event.button.id == "back_to_menu":
+			app.push_screen("main")
+		elif event.button.id == "save":
+			config_content = self.query_one("#config_content")
+			config_text = config_content.text.split("\n")
+			alias = []
+			banks = []
+			for line in config_text:
+				if line == "":
+					continue
+				parts = line.split(":")
+				alias.append(parts[0].strip())
+				if len(parts) > 1:
+					banks.append(parts[1].strip())
+				else:
+					banks.append("0")
+			config = {}
+			for i in range(min(len(alias), len(banks))):
+				config[alias[i]] = banks[i]
+
+			if self.edit_patch:
+				patch_content = self.query_one("#patch_content")
+				patch_text = patch_content.text.split("\n")
+				patch_list = []
+				for line in patch_text:
+					if line == "":
+						continue
+					parts = line.split("--")
+					if len(parts) == 1:
+						patch_list.append({"sound": parts[0].strip(), "comments": ""})
+					else:
+						patch_list.append({"sound": parts[0].strip(), "comments": parts[1].strip()})
+				content = patcher.compile_patch(config, patch_list, self.patch_name)
+				patcher.write_data(content, self.path)
+			else:
+				patcher.write_data(json.dumps(config), self.path)
+			app.push_screen("patch_config_main")
+
+	def compose(self) -> ComposeResult:
+		yield Header()
+		yield Footer()
+		with Vertical():
+			yield Label("Patch Config Editing", classes="h1")
+			yield Input("Name", id="name_input")
+			with TabbedContent(id="tabbed_content"):
+				with TabPane("Config"):
+					yield TextArea("Config Content", id="config_content", tooltip="Configs are split into"
+										  "alias-bank_value pairs. Each alias-value pair is separated by a colon, "
+										  "and any leading/trailing spaces are removed.",
+								   show_line_numbers=True)
+				if self.edit_patch:
+					with TabPane("Patch"):
+						yield TextArea("Patch Content", id="patch_content", tooltip="Patches are split into"
+											"Patches are split into sound-comment pairs, split by 2 minus symbols (--)."
+											"Comments are optional, and leading/trailing spaces are removed.",
+									   show_line_numbers=True)
+			with Horizontal():
+				yield Button("Back to Menu", id="back_to_menu")
+				yield Button("Save and Exit", id="save")
+
+	def on_mount(self) -> None:
+		config_content = self.query_one("#config_content")
+		name_input = self.query_one("#name_input")
+		if isinstance(config_content, TextArea):
+			alias = list(self.config.keys())
+			banks = list(self.config.values())
+			text: str = ""
+			for i in range(min(len(alias), len(banks))):
+				text += f"{alias[i]} : {banks[i]}\n"
+
+			config_content.text = text
+
+		if self.edit_patch:
+			patch_content = self.query_one("#patch_content")
+			if isinstance(patch_content, TextArea):
+				text = ""
+				for patch in self.patch_list:
+					if patch["comments"] == "":
+						text += f"{patch['sound']}\n"
+					else:
+						text += f"{patch['sound']} -- {patch['comments']}\n"
+				patch_content.text = text
+
+		if isinstance(name_input, Input):
+			if self.edit_patch:
+				name_input.value = self.patch_name
+			else:
+				name_input.value = ""
+
+
+
 class PatchConfigEditingMainScreen(Screen):
 	CSS_PATH = "css/patch_config_main.tcss"
 
@@ -597,12 +733,31 @@ class PatchConfigEditingMainScreen(Screen):
 		yield Vertical(
 			Label("Patch Config Editing", classes="h1"),
 			Horizontal(
+				Button("Create File", id="create"),
+				Select([], id="create_type").from_values(("Create Patch", "Create Config")),
 			),
-			Button("Create File", id="create"),
-			Select([], id="create_type").from_values(("Create Patch", "Create Config")),
 			Button("Edit File", id="edit"),
 			Button("Back to Menu", id="back_to_menu"),
 		)
+
+	def on_button_pressed(self, event: Button.Pressed) -> None:
+		if event.button.id == "back_to_menu":
+			app.push_screen("main")
+		elif event.button.id == "create":
+			if self.query_one("Select").value == "Create Patch":
+				print("Patch")
+			elif self.query_one("Select").value == "Create Config":
+				print("Config")
+		elif event.button.id == "edit":
+			self.app.push_screen(FileSelectionScreen(file_manager.get_user_data_dir(), select_files=True),
+								 self.file_selected)
+
+	def file_selected(self, path: PosixPath):
+		extension = str(path).split(".")[-1]
+		if extension not in ["midipatch", "midiconfig"]:
+			self.app.push_screen(ErrorScreen("Invalid file type. Please select a .midipatch or .midiconfig file."))
+			return
+		app.push_screen(PatchConfigEditingScreen(str(path), extension == "midipatch"))
 #endregion
 
 
