@@ -1,15 +1,12 @@
 # Installation
-This section will guide you through the installation process of this program.
+This section will guide you through the installation process of the `curses` port of this program.
 
 Currently, this program is built for Linux, and isn't tested/may not work on other operating systems.
 
-***NOTE: This guide refers to the newer, documentation-still-isn't-complete project,
-and as such may have undiscovered bugs and problems, alongside incomplete documentation.
-If you want to use the older, slightly more stable version, go [here](old_instructions.md) for instructions on how to use that.***
-
 ## Basic Installation
-To get the latest release, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page, or get the latest release [here](https://github.com/MM4096/MIDI-Controller/releases/latest).
-Download the `MIDI-CONTROLLER-linux` file, and place it in a directory of your choosing.
+To see the releases, go to the [Releases](https://github.com/MM4096/MIDI-Controller/releases/) page, or get the latest release [here](https://github.com/MM4096/MIDI-Controller/releases/latest).
+Download the `MIDI-Controller-curses-linux` file, and place it in a directory of your choosing.
+**Note: For versions before v0.5.prerelease.1, the file is named `MIDI-Controller-linux`.**
 
 In a terminal, navigate to the directory with the executable in it, and run the following command:
 ```bash
