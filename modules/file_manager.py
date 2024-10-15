@@ -14,7 +14,7 @@ def get_patch_directory() -> str:
     return get_user_data_dir() + "/" + "patches"
 
 def get_config_directory() -> str:
-    return get_user_data_dir() + "/" + "configs"
+    return get_user_data_dir() + "/" + "presets"
 
 
 def write_data(data: str, file_path: str):
