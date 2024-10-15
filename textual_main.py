@@ -629,16 +629,21 @@ class PerformanceSetupScreen(Screen):
 class PatchConfigEditingScreen(Screen):
 	CSS_PATH = "css/patch_config_editing.tcss"
 
-	def __init__(self, path: str, edit_patch: bool = True):
+	def __init__(self, path: str, _edit_patch: bool = True):
 		super().__init__()
-		self.edit_patch = edit_patch
+		self.edit_patch = _edit_patch
 		self.path = path
 
-		if edit_patch:
+		if _edit_patch:
 			patch = patcher.parse_patch_from_file(path)
 			self.patch_name = patch["patch_name"]
 			self.config = patch["patch_config"]
 			self.patch_list = patch["patch_list"]["list"]
+
+			# if is empty file, then populate with preset
+			if self.patch_list == {} and self.config == {}:
+				if preferences.get_preference_value("default_preset") != "":
+					self.config["preset"] = preferences.get_preference_value("default_preset")
 		else:
 			self.config = parse_preset(path)
 
@@ -782,6 +787,8 @@ class PatchConfigEditingMainScreen(Screen):
 		app.push_screen(PatchConfigEditingScreen(str(path), extension == "midipatch"))
 
 	def file_selected_create(self, path: PosixPath):
+		if str(path) == "":
+			return
 		full_path = str(path) + "/" + self.query_one("#name_input").value
 		if self.query_one("Select").value == "Create Patch":
 			full_path += ".midipatch"
