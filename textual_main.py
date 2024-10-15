@@ -382,6 +382,11 @@ class PerformanceScreen(Screen):
 				VerticalScroll(
 					id="patch_list",
 				),
+				Select(
+					[(self.files[i].replace(file_manager.get_patch_directory() + "/", ""), i) for i in range(len(self.files))],
+					allow_blank=False,
+					id="select_files",
+				),
 			),
 			Vertical(
 				Vertical(
@@ -469,6 +474,11 @@ class PerformanceScreen(Screen):
 			add_to_output(f"performance_file_changed<~separator~>{self.current_file_index}<~separator~>"
 						  f"{json.dumps([i["sound"] for i in this_patch_list])}<~separator~>{json.dumps(this_comment_list)}")
 			self.cached_patch_index = -1
+
+			select = self.query_one("#select_files")
+			if isinstance(select, Select):
+				select.value = self.current_file_index
+
 		if self.cached_patch_index != self.current_patch_index:
 			add_to_output(f"performance_patch_changed<~separator~>{self.current_patch_index}")
 
@@ -540,6 +550,12 @@ class PerformanceScreen(Screen):
 		if self.process is not None:
 			self.process.kill()
 			self.process.join()
+
+	def on_select_changed(self, changed: Select.Changed):
+		# print(changed.value)
+		if changed.value > -1 and changed.value != self.current_file_index:
+			self.current_file_index = changed.value
+			self.update()
 
 	def _on_unmount(self) -> None:
 		super()._on_unmount()
