@@ -555,6 +555,7 @@ class PerformanceScreen(Screen):
 		# print(changed.value)
 		if changed.value > -1 and changed.value != self.current_file_index:
 			self.current_file_index = changed.value
+			self.current_patch_index = 0
 			self.update()
 
 	def _on_unmount(self) -> None:
