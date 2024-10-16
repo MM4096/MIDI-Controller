@@ -43,8 +43,9 @@ def get_main_port():
 
 
 def add_to_output(message: str):
-	with open(file_manager.get_user_data_dir() + "/output.txt", "a") as f:
-		f.write(message + "\n")
+	if preferences.get_preference_value("do_output_file"):
+		with open(file_manager.get_user_data_dir() + "/output.txt", "a") as f:
+			f.write(message + "\n")
 #endregion
 
 
@@ -899,6 +900,8 @@ class MainApp(App):
 def run_observer():
 	cached_lines = []
 	while True:
+		if not preferences.get_preference_value("do_command_file_listener"):
+			continue
 		if os.path.exists(file_manager.get_user_data_dir() + "/commands.txt"):
 			with open(file_manager.get_user_data_dir() + "/commands.txt", "r") as f:
 				lines = f.readlines()
@@ -936,11 +939,14 @@ if __name__ == "__main__":
 	command_manager = multiprocessing.Manager()
 	command_queue = command_manager.Queue()
 	observer_process = multiprocessing.Process(target=run_observer)
-	observer_process.start()
+	if preferences.get_preference_value("run_file_observer"):
+		observer_process.start()
 
 	app.run()
 
-	observer_process.terminate()
-	observer_process.join()
+
+	if preferences.get_preference_value("run_file_observer"):
+		observer_process.terminate()
+		observer_process.join()
 
 	add_to_output("performance_ended")
