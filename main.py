@@ -805,12 +805,32 @@ def performance_mode(stdscr: curses.window):
 							joined_query = " ".join(split[1:])
 							for i in all_patch_names_list:
 								if i.lower().startswith(joined_query.lower()):
+									cached_file_index = -1
 									current_file_index = all_patch_names_list.index(i)
 									break
+							for i in all_patch_names_list:
+								if joined_query.lower() in i.lower():
+									cached_file_index = -1
+									current_file_index = all_patch_names_list.index(i)
+									break
+							stdscr.addstr(0, 0, "[goto]: Match not found.")
+						if split[0] == "exit":
+							return
+
 						_stop = True
 
+
+					split_command = current_command[1:]
+					split = split_command.split(" ")
+					command_text: str = "Entering a command..."
+
+					if split[0] == "goto":
+						command_text = "[goto]: Go to the first file that matches the selector"
+					elif split[0] == "exit":
+						command_text = "[exit]: Exit performance mode"
+
 					new_window.erase()
-					new_window.addstr("Entering a command...\n")
+					new_window.addstr(f"{command_text}\n")
 					new_window.addstr(current_command)
 					new_window.refresh()
 				new_window.clear()
