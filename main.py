@@ -814,8 +814,12 @@ def performance_mode(stdscr: curses.window):
 									current_file_index = all_patch_names_list.index(i)
 									break
 							stdscr.addstr(0, 0, "[goto]: Match not found.")
-						if split[0] == "exit":
+						elif split[0] == "exit":
 							return
+						elif split[0] == "next":
+							current_file_index += 1
+						elif split[0] == "prev":
+							current_file_index -= 1
 
 						_stop = True
 
@@ -828,6 +832,10 @@ def performance_mode(stdscr: curses.window):
 						command_text = "[goto]: Go to the first file that matches the selector"
 					elif split[0] == "exit":
 						command_text = "[exit]: Exit performance mode"
+					elif split[0] == "next":
+						command_text = "[next]: Go to the next file in the list"
+					elif split[0] == "prev":
+						command_text = "[exit]: Go to the previous file in the list"
 
 					new_window.erase()
 					new_window.addstr(f"{command_text}\n")
@@ -847,11 +855,6 @@ def performance_mode(stdscr: curses.window):
 		if current_patch_index < 0:
 			if preferences.get_preference_value("allow_backtracking_in_performance_mode"):
 				current_file_index -= 1
-				if current_file_index < 0:
-					if preferences.get_preference_value("loop_performance_mode"):
-						current_file_index = len(performance_files) - 1
-					else:
-						current_file_index = 0
 			current_file_path = performance_files[current_file_index]
 			this_patch_list = patcher.parse_patch_from_file(current_file_path)
 			this_int_patch_list = patcher.get_int_list(this_patch_list)
@@ -860,11 +863,17 @@ def performance_mode(stdscr: curses.window):
 			# next file
 			current_patch_index = 0
 			current_file_index += 1
-			if current_file_index >= len(performance_files):
-				if preferences.get_preference_value("loop_performance_mode"):
-					current_file_index = 0
-				else:
-					current_file_index = len(performance_files) - 1
+
+		if current_file_index >= len(performance_files):
+			if preferences.get_preference_value("loop_performance_mode"):
+				current_file_index = 0
+			else:
+				current_file_index = len(performance_files) - 1
+		elif current_file_index < 0:
+			if preferences.get_preference_value("loop_performance_mode"):
+				current_file_index = len(performance_files) - 1
+			else:
+				current_file_index = 0
 	outport.close()
 
 
