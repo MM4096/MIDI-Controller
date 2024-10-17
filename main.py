@@ -12,6 +12,7 @@ import mido.backends.rtmidi
 
 from modules import file_manager, preferences, tools, patcher
 from modules.command import run_command, Command
+from modules.tools import sort_list_by_numbering_system
 
 # region colors
 
@@ -308,34 +309,6 @@ def open_program_data(stdscr: curses.window):
 			break
 		stdscr.erase()
 		stdscr.refresh()
-
-
-# Convert filename to an int, char, string syntax for sorting
-def parse_filename(filename) -> (float, str, str, str):
-	# Regex to match the filename components
-	match = re.match(r'(\d+)?([a-zA-Z])? (.*)\.(.*)', filename)
-	if match:
-		number = int(match.group(1)) if match.group(1) else float('inf')  # Use infinity for missing numbers
-		letter = match.group(2) if match.group(2) else ''
-		name = match.group(3)
-		extension = match.group(4)
-		return number, letter, name, extension
-	else:
-		# Handle files that don't match the expected pattern
-		return float('inf'), '', filename, ''
-
-
-def sort_list_by_numbering_system(str_list: list, return_only_filenames: bool = False, add_tab: bool = False) -> list:
-	dirnames = [os.path.dirname(file) for file in str_list]
-	filenames = [os.path.basename(file) for file in str_list]
-	parsed_files = [parse_filename(file) for file in filenames]
-	sorted_files = sorted(parsed_files, key=lambda x: (x[0], x[1], x[2]))
-
-	recomposed_files = [
-		''.join([f"{x[0]}" if x[0] != float('inf') else '', x[1], f" {'\t' if add_tab else ''}{x[2]}.{x[3]}"]).strip()
-		for x in sorted_files]
-	recomposed_directories = [f"{dirnames[i]}/{recomposed_files[i]}" for i in range(len(recomposed_files))]
-	return recomposed_files if return_only_filenames else recomposed_directories
 
 
 def select_file(default_path: str, title: str = "Select a file!", allow_leaving_default_path: bool = False,

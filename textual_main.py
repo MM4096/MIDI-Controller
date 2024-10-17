@@ -1,29 +1,23 @@
 import json
 import multiprocessing
 import os
-from os.path import join as path_join
 import time
+from os.path import join as path_join
 from pathlib import PosixPath
-import threading
-from queue import Queue, Empty
 
 import mido
-from textual import on, events
+from textual import on
+from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen, ModalScreen
-from textual.widget import AwaitMount
 from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select, \
 	TextArea, TabbedContent, TabPane
-from textual.app import App, ComposeResult
-from watchdog.events import FileSystemEventHandler, DirModifiedEvent, FileModifiedEvent
-from watchdog.observers import Observer
 
-from main import edit_patch
+from modules import file_manager
 from modules import preferences, patcher
 from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
 	is_int
-from modules import file_manager
 
 
 #region helper functions
@@ -556,6 +550,7 @@ class PerformanceScreen(Screen):
 		# print(changed.value)
 		if changed.value > -1 and changed.value != self.current_file_index:
 			self.current_file_index = changed.value
+			self.current_patch_index = 0
 			self.update()
 
 	def _on_unmount(self) -> None:
@@ -746,13 +741,6 @@ class PatchConfigEditingScreen(Screen):
 
 class PatchConfigEditingMainScreen(Screen):
 	CSS_PATH = "css/patch_config_main.tcss"
-
-	def on_button_pressed(self, event: Button.Pressed) -> None:
-		if event.button.id == "back_to_menu":
-			app.push_screen("main")
-		elif event.button.id == "add_patch":
-			# app.push_screen(PatchConfigEditingScreen())
-			pass
 
 	def compose(self) -> ComposeResult:
 		yield Header()
