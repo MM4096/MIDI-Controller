@@ -203,12 +203,15 @@ class SelectMidiPortScreen(ModalScreen[str]):
 			if isinstance(list_view, VerticalScroll):
 				list_view.remove_children()
 				for index, port in enumerate(self.midi_ports):
-					list_view.mount(Button(port, id=f"port_{index}"))
-		elif "port_" in event.button.id:
-			try:
-				self.dismiss(mido.get_input_names()[int(event.button.id.replace("port_", ""))])
-			except IndexError:
-				self.app.push_screen(ErrorScreen(f"Specified port not found! Did you disconnect it?"))
+					list_view.mount(Button(port, classes=f"port_{index}"))
+		else:
+			for i in event.button.classes:
+				if "port_" in i:
+					port: int = int(i.replace("port_", ""))
+					try:
+						self.dismiss(mido.get_input_names()[port])
+					except IndexError:
+						self.app.push_screen(ErrorScreen(f"Specified port not found! Did you disconnect it?"))
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -216,7 +219,7 @@ class SelectMidiPortScreen(ModalScreen[str]):
 		yield Vertical(
 			Label("Select MIDI Port", classes="h1"),
 			VerticalScroll(
-				*[Button(port, id=f"port_{index}") for index, port in enumerate(mido.get_input_names())],
+				*[Button(port, classes=f"port_{index}") for index, port in enumerate(mido.get_input_names())],
 				id="midi_ports",
 			),
 			Horizontal(
