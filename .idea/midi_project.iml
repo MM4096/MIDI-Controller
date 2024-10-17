@@ -7,9 +7,10 @@
       <excludeFolder url="file://$MODULE_DIR$/build/curses_main" />
       <excludeFolder url="file://$MODULE_DIR$/build/textual_main" />
       <excludeFolder url="file://$MODULE_DIR$/demo" />
-      <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/win_nano" />
+      <excludeFolder url="file://$MODULE_DIR$/build/main" />
     </content>
+    <content url="file://$MODULE_DIR$/build/main" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

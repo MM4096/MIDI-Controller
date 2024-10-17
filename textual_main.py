@@ -13,8 +13,9 @@ from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, Label, Button, Input, ListView, DirectoryTree, ListItem, Select, \
 	TextArea, TabbedContent, TabPane
 
-from modules import file_manager
+from modules import file_manager, commands
 from modules import preferences, patcher
+from modules.commands import OutputType
 from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
 	is_int
@@ -32,14 +33,12 @@ def create_needed_files():
 		f.write("")
 	new_preferences = preferences.update_preferences()
 
+
 def get_main_port():
 	with open(file_manager.get_file_path("main_port.data"), "r") as f:
 		return f.read()
 
 
-def add_to_output(message: str):
-	with open(file_manager.get_file_path("output.txt"), "a") as f:
-		f.write(message + "\n")
 #endregion
 
 
@@ -60,17 +59,16 @@ class OrderableListWidget(Static):
 
 	def compose(self) -> ComposeResult:
 		yield Vertical(
-			ListView (
+			ListView(
 				id="orderable_list",
 			),
-			Horizontal (
+			Horizontal(
 				Button("Move Up", id="move_up"),
 				Button("Move Down", id="move_down"),
 				Button("Delete", id="delete"),
 				id="orderable_list_buttons",
 			),
 		)
-
 
 	def on_button_pressed(self, event: Button.Pressed) -> None:
 		if event.button.id == "move_up":
@@ -79,7 +77,6 @@ class OrderableListWidget(Static):
 			self.action_move_item_down()
 		elif event.button.id == "delete":
 			self.action_delete_item()
-
 
 	def redraw(self):
 		list_view = self.query_one("#orderable_list")
@@ -167,7 +164,6 @@ class PopupScreen(Screen[bool]):
 		if event.button.id == "close_popup":
 			self.dismiss(False)
 
-
 	def compose(self) -> ComposeResult:
 		yield Vertical(
 			Label(self.popup_text, classes="h1 prompt"),
@@ -241,7 +237,6 @@ class SettingsScreen(Screen):
 		elif event.button.id == "save_preferences":
 			self.save_preferences()
 
-
 	def compose(self) -> ComposeResult:
 		yield Header()
 		yield Footer()
@@ -291,7 +286,8 @@ class SettingsScreen(Screen):
 					elif isinstance(preference.value, str):
 						preference.value = this_input.value
 				except ValueError:
-					self.query_one("#settings_error").update("Invalid value for preference: " + preference.preference_name)
+					self.query_one("#settings_error").update(
+						"Invalid value for preference: " + preference.preference_name)
 					return
 		preferences.set_preferences(preference_list)
 		self.query_one("#settings_error").update("")
@@ -314,7 +310,7 @@ class ErrorScreen(ModalScreen):
 			Label(self.error_message, classes="h1 error_label"),
 			Button("Close", id="close_popup"),
 			classes="popup",
-	)
+		)
 
 
 class WarningScreen(ModalScreen[bool]):
@@ -337,7 +333,7 @@ class WarningScreen(ModalScreen[bool]):
 			Button("Proceed Anyways", id="submit_popup"),
 			Button("Cancel", id="close_popup"),
 			classes="popup",
-	)
+		)
 
 
 class PerformanceScreen(Screen):
@@ -365,8 +361,8 @@ class PerformanceScreen(Screen):
 
 		app.performance_screen = self
 
-		add_to_output(f"performance_started<~separator~>"
-					  f"{json.dumps([file_manager.remove_patch_directory_from_patch(i) for i in self.files])}")
+		commands.send_message(OutputType.PERFORMANCE_STARTED,
+							  json.dumps([file_manager.remove_patch_directory_from_patch(i) for i in self.files]))
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -378,7 +374,8 @@ class PerformanceScreen(Screen):
 					id="patch_list",
 				),
 				Select(
-					[(self.files[i].replace(file_manager.get_patch_directory() + "/", ""), i) for i in range(len(self.files))],
+					[(self.files[i].replace(file_manager.get_patch_directory() + "/", ""), i) for i in
+					 range(len(self.files))],
 					allow_blank=False,
 					id="select_files",
 				),
@@ -405,7 +402,8 @@ class PerformanceScreen(Screen):
 				return
 
 	def set_patch_index(self, index: int):
-		self.current_patch_index = clampi(index, 0, len(patcher.get_patch_list(self.files[self.current_file_index])) - 1)
+		self.current_patch_index = clampi(index, 0,
+										  len(patcher.get_patch_list(self.files[self.current_file_index])) - 1)
 		self.update()
 
 	def on_mount(self) -> None:
@@ -462,12 +460,13 @@ class PerformanceScreen(Screen):
 		self.kill_pedal_signal()
 
 		self.pedal_event.clear()
-		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal, args=(self.midi_port, self.pedal_event, self.pedal_queue))
+		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal,
+											   args=(self.midi_port, self.pedal_event, self.pedal_queue))
 		self.process.start()
 
 		if self.cached_file_index != self.current_file_index:
-			add_to_output(f"performance_file_changed<~separator~>{self.current_file_index}<~separator~>"
-						  f"{json.dumps([i["sound"] for i in this_patch_list])}<~separator~>{json.dumps(this_comment_list)}")
+			commands.send_message(OutputType.PERFORMANCE_FILE_CHANGED,
+								  [self.current_file_index, json.dumps([i["sound"] for i in this_patch_list]), json.dumps(this_comment_list)])
 			self.cached_patch_index = -1
 
 			select = self.query_one("#select_files")
@@ -475,7 +474,7 @@ class PerformanceScreen(Screen):
 				select.value = self.current_file_index
 
 		if self.cached_patch_index != self.current_patch_index:
-			add_to_output(f"performance_patch_changed<~separator~>{self.current_patch_index}")
+			commands.send_message(OutputType.PERFORMANCE_PATCH_CHANGED, str(self.current_patch_index))
 
 		self.cached_file_index = self.current_file_index
 		self.cached_patch_index = self.current_patch_index
@@ -529,7 +528,8 @@ class PerformanceScreen(Screen):
 			for msg in inport:
 				if event.is_set():
 					return
-				if msg.type == "control_change" and msg.control == 82 and msg.value > int(preferences.get_preference_value("switch_pedal_sensitivity")):
+				if msg.type == "control_change" and msg.control == 82 and msg.value > int(
+						preferences.get_preference_value("switch_pedal_sensitivity")):
 					queue.put("pedal_down")
 					return
 
@@ -556,7 +556,7 @@ class PerformanceScreen(Screen):
 	def _on_unmount(self) -> None:
 		super()._on_unmount()
 		self.kill_pedal_signal()
-		add_to_output("performance_ended")
+		commands.send_message(OutputType.PERFORMANCE_ENDED)
 
 
 class PerformanceSetupScreen(Screen):
@@ -582,12 +582,10 @@ class PerformanceSetupScreen(Screen):
 				return
 			self.app.push_screen(SelectMidiPortScreen(mido.get_input_names()), self.selected_midi_port)
 
-
 	def selected_midi_port(self, port: str):
 		if port == "": return
 		self.app.push_screen(PerformanceScreen(
 			[file_manager.get_patch_directory_from_patch(i) for i in self.orderable_list.list_items], port))
-
 
 	def selected_file(self, path: str):
 		if path == "": return
@@ -596,11 +594,11 @@ class PerformanceSetupScreen(Screen):
 
 	def selected_folder(self, path: str):
 		if path == "": return
-		files: list = [file_manager.remove_patch_directory_from_patch(str(path) + "/" + i) for i in file_manager.get_files_in_dir(path)]
+		files: list = [file_manager.remove_patch_directory_from_patch(str(path) + "/" + i) for i in
+					   file_manager.get_files_in_dir(path)]
 		for file in files:
 			self.orderable_list.list_items.append(str(file))
 		self.orderable_list.redraw()
-
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -608,12 +606,12 @@ class PerformanceSetupScreen(Screen):
 		self.orderable_list = OrderableListWidget([])
 		yield Vertical(
 			Label("Performance Screen", classes="h1"),
-			Horizontal (
+			Horizontal(
 				Button("Add File", id="add_file"),
 				Button("Add Folder", id="add_folder"),
 			),
 			self.orderable_list,
-			Horizontal (
+			Horizontal(
 				Button("Sort Items", id="sort_items"),
 				Button("Back to Menu", id="back_to_menu"),
 				Button("Start Performance", id="start_performance"),
@@ -695,14 +693,14 @@ class PatchConfigEditingScreen(Screen):
 			with TabbedContent(id="tabbed_content"):
 				with TabPane("Config"):
 					yield TextArea("Config Content", id="config_content", tooltip="Configs are split into"
-										  "alias-bank_value pairs. Each alias-value pair is separated by a colon, "
-										  "and any leading/trailing spaces are removed.",
+																				  "alias-bank_value pairs. Each alias-value pair is separated by a colon, "
+																				  "and any leading/trailing spaces are removed.",
 								   show_line_numbers=True)
 				if self.edit_patch:
 					with TabPane("Patch"):
 						yield TextArea("Patch Content", id="patch_content", tooltip="Patches are split into"
-											"Patches are split into sound-comment pairs, split by 2 minus symbols (--)."
-											"Comments are optional, and leading/trailing spaces are removed.",
+																					"Patches are split into sound-comment pairs, split by 2 minus symbols (--)."
+																					"Comments are optional, and leading/trailing spaces are removed.",
 									   show_line_numbers=True)
 			with Horizontal():
 				yield Button("Back to Menu", id="back_to_menu")
@@ -738,7 +736,6 @@ class PatchConfigEditingScreen(Screen):
 				name_input.value = ""
 
 
-
 class PatchConfigEditingMainScreen(Screen):
 	CSS_PATH = "css/patch_config_main.tcss"
 
@@ -749,7 +746,8 @@ class PatchConfigEditingMainScreen(Screen):
 			Label("Patch Config Editing", classes="h1"),
 			Horizontal(
 				Select([], id="create_type").from_values(("Create Patch", "Create Config")),
-				Input("", id="name_input", placeholder="Enter the name of patch/config", tooltip="No extensions are needed"),
+				Input("", id="name_input", placeholder="Enter the name of patch/config",
+					  tooltip="No extensions are needed"),
 				Button("Create File", id="create"),
 			),
 			Button("Edit File", id="edit"),
@@ -762,7 +760,7 @@ class PatchConfigEditingMainScreen(Screen):
 		elif event.button.id == "create":
 			self.app.push_screen(FileSelectionScreen(
 				file_manager.get_patch_directory() if self.query_one("Select").value == "Create Patch"
-					else file_manager.get_config_directory(), select_files=False,
+				else file_manager.get_config_directory(), select_files=False,
 				window_title="Select folder to place patch in"), self.file_selected_create)
 		elif event.button.id == "edit":
 			self.app.push_screen(FileSelectionScreen(file_manager.get_user_data_dir(), select_files=True),
@@ -792,11 +790,14 @@ class PatchConfigEditingMainScreen(Screen):
 				return
 			patcher.write_data(json.dumps({}), full_path)
 		self.app.push_screen(PatchConfigEditingScreen(full_path))
+
+
 #endregion
 
 
 class MainScreen(Screen):
 	CSS_PATH = "css/main.tcss"
+
 	def on_button_pressed(self, event: Button.Pressed) -> None:
 		if event.button.id == "settings":
 			app.push_screen("settings")
@@ -804,7 +805,6 @@ class MainScreen(Screen):
 			app.push_screen("performance")
 		elif event.button.id == "patch_config":
 			app.push_screen("patch_config_main")
-
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -915,6 +915,8 @@ def run_observer():
 			cached_lines = []
 
 		time.sleep(0.1)
+
+
 #endregion
 
 if __name__ == "__main__":
@@ -931,4 +933,4 @@ if __name__ == "__main__":
 	observer_process.terminate()
 	observer_process.join()
 
-	add_to_output("performance_ended")
+	commands.send_message(OutputType.PERFORMANCE_ENDED)
