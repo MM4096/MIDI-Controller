@@ -1,6 +1,7 @@
 import json
 import multiprocessing
 import os
+from os.path import join as path_join
 import time
 from pathlib import PosixPath
 import threading
@@ -28,22 +29,22 @@ from modules import file_manager
 #region helper functions
 def create_needed_files():
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir())
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches")
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/presets")
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
-	with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "patches"))
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "presets"))
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "temp"))
+	with open(file_manager.get_file_path("commands.txt"), "w") as f:
 		f.write("")
-	with open(file_manager.get_user_data_dir() + "/output.txt", "w") as f:
+	with open(file_manager.get_file_path("output.txt"), "w") as f:
 		f.write("")
 	new_preferences = preferences.update_preferences()
 
 def get_main_port():
-	with open(file_manager.get_user_data_dir() + "/main_port.data", "r") as f:
+	with open(file_manager.get_file_path("main_port.data"), "r") as f:
 		return f.read()
 
 
 def add_to_output(message: str):
-	with open(file_manager.get_user_data_dir() + "/output.txt", "a") as f:
+	with open(file_manager.get_file_path("output.txt"), "a") as f:
 		f.write(message + "\n")
 #endregion
 
@@ -887,10 +888,10 @@ class MainApp(App):
 				if is_int(parts[1]):
 					self.performance_screen.go_to_file(int(parts[1]))
 		elif parts[0] == "clear_commands_file":
-			with open(file_manager.get_user_data_dir() + "/commands.txt", "w") as f:
+			with open(file_manager.get_file_path("commands.txt"), "w") as f:
 				f.write("")
 		elif parts[0] == "clear_output_file":
-			with open(file_manager.get_user_data_dir() + "/output.txt", "w") as f:
+			with open(file_manager.get_file_path("output.txt"), "w") as f:
 				f.write("")
 
 
@@ -898,8 +899,8 @@ class MainApp(App):
 def run_observer():
 	cached_lines = []
 	while True:
-		if os.path.exists(file_manager.get_user_data_dir() + "/commands.txt"):
-			with open(file_manager.get_user_data_dir() + "/commands.txt", "r") as f:
+		if os.path.exists(file_manager.get_file_path("commands.txt")):
+			with open(file_manager.get_file_path("commands.txt"), "r") as f:
 				lines = f.readlines()
 				if not lines:
 					cached_lines = []

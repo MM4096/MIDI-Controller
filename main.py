@@ -2,6 +2,7 @@ import curses
 import json
 import multiprocessing
 import os
+from os.path import join as path_join
 import re
 import time
 from curses import wrapper
@@ -55,9 +56,9 @@ def print_and_wait(stdscr: curses.window, text: str, wait_for_enter: bool = True
 
 def create_needed_files():
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir())
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/patches")
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/presets")
-	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir() + "/temp")
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "patches"))
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "presets"))
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(),  "temp"))
 	new_preferences = preferences.update_preferences()
 
 
@@ -71,7 +72,7 @@ def wait_for_switch_pedal(port: str, event):
 
 
 def get_main_port():
-	with open(file_manager.get_user_data_dir() + "/main_port.data", "r") as f:
+	with open(file_manager.get_file_path("main_port.data"), "r") as f:
 		return f.read()
 
 
@@ -100,7 +101,7 @@ def set_main_port(_port: str):
 		if "Midi Through" in _port:
 			pass
 		else:
-			with open(file_manager.get_user_data_dir() + "/main_port.data", "w") as f:
+			with open(file_manager.get_file_path("main_port.data"), "w") as f:
 				f.write(_port)
 
 
@@ -298,11 +299,11 @@ def open_program_data(stdscr: curses.window):
 		options = ["Open patches folder", "Open presets folder", "Open preferences file", "Back"]
 		index, option = select_options(options, "Open program data", ">", 0)
 		if index == 0:
-			run_command(Command.OPEN_DIRECTORY, f"{file_manager.get_user_data_dir()}/patches")
+			run_command(Command.OPEN_DIRECTORY, f"{file_manager.get_patch_directory()}")
 		elif index == 1:
-			run_command(Command.OPEN_DIRECTORY, f"{file_manager.get_user_data_dir()}/patches/presets")
+			run_command(Command.OPEN_DIRECTORY, f"{file_manager.get_config_directory()}/")
 		elif index == 2:
-			run_command(Command.WRITE_FILE, f"{file_manager.get_user_data_dir()}/preferences")
+			run_command(Command.WRITE_FILE, f"{file_manager.get_file_path("preferences")}")
 		elif index == 3:
 			break
 		stdscr.erase()
@@ -472,7 +473,7 @@ def edit_absolute_config(stdscr: curses.window):
 	stdscr.erase()
 	index, option = select_options(["Create new config", "Edit existing config"], "Config editing", ">", 0)
 	if index == 0:
-		folder_path = select_directory(file_manager.get_user_data_dir() + "/patches/presets",
+		folder_path = select_directory(file_manager.get_config_directory(),
 									   "Select a folder to create the config in", False)
 		if folder_path == "":
 			edit_absolute_config(stdscr)
@@ -481,7 +482,7 @@ def edit_absolute_config(stdscr: curses.window):
 			new_config = edit_config({}, False)
 			file_manager.write_data(json.dumps(new_config), f"{folder_path}/{name}.midiconfig")
 	else:
-		config_path = select_file(file_manager.get_user_data_dir() + "/patches/presets", "Select a config file", True,
+		config_path = select_file(file_manager.get_config_directory(), "Select a config file", True,
 								  ".midiconfig")
 		if config_path == "":
 			return
@@ -496,7 +497,7 @@ def edit_patch(stdscr: curses.window):
 	patch_path = ""
 	index, option = select_options(["Create new patch", "Edit existing patch"], "Patch editing", ">", 0)
 	if index == 0:
-		folder_path = select_directory(file_manager.get_user_data_dir() + "/patches",
+		folder_path = select_directory(file_manager.get_patch_directory(),
 									   "Select a folder to create the patch in", False)
 		if folder_path == "":
 			edit_patch(stdscr)
@@ -507,7 +508,7 @@ def edit_patch(stdscr: curses.window):
 			patcher.write_data(patcher.compile_patch({}, [], ""), f"{folder_path}/{name}.midipatch")
 			patch_path = f"{folder_path}/{name}.midipatch"
 	elif index == 1:
-		patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True,
+		patch_path = select_file(file_manager.get_patch_directory(), "Select a patch file", True,
 								 ".midipatch")
 		if patch_path == "":
 			edit_patch(stdscr)
@@ -548,14 +549,14 @@ def edit_patch(stdscr: curses.window):
 						 "# start patching here\n"
 						 "# use '--' after a sound to declare a comment (having no '--' will result in no comment)\n")
 			file_data += "\n".join([f"{i['sound']} -- {i['comments']}" for i in patch_list])
-			with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "w") as f:
+			with open(file_manager.get_file_path("temp/patch_list.temp"), "w") as f:
 				f.write(file_data)
-			run_command(Command.WRITE_FILE, f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
+			run_command(Command.WRITE_FILE, file_manager.get_file_path("temp/patch_list.temp"))
 			stdscr.clear()
 			stdscr.refresh()
-			with open(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp", "r") as f:
+			with open(file_manager.get_file_path("temp/patch_list.temp"), "r") as f:
 				given_list = f.read().splitlines()
-			os.remove(f"{file_manager.get_user_data_dir()}/temp/patch_list.temp")
+			os.remove(file_manager.get_file_path("temp/patch_list.temp"))
 			list_copy: list = []
 			for line in given_list:
 				removed_spaces = line.replace(" ", "").replace("\t", "")
@@ -625,7 +626,7 @@ def performance_mode(stdscr: curses.window):
 										"Perform a list of patches in a folder (select from folder)", "Back"],
 									   "Performance Mode", ">", 0)
 		if index == 0:
-			patch_path = select_file(file_manager.get_user_data_dir() + "/patches", "Select a patch file", True,
+			patch_path = select_file(file_manager.get_patch_directory(), "Select a patch file", True,
 									 ".midipatch")
 			if patch_path == "":
 				continue
@@ -633,7 +634,7 @@ def performance_mode(stdscr: curses.window):
 			display_files = sort_list_by_numbering_system([patch_path], True)
 			selected_files = True
 		elif index == 1:
-			folder_path = select_directory(file_manager.get_user_data_dir() + "/patches", "Select a folder", False)
+			folder_path = select_directory(file_manager.get_patch_directory(), "Select a folder", False)
 			if folder_path == "":
 				continue
 			performance_files = [folder_path + "/" + i for i in file_manager.get_files_in_dir(folder_path) if
@@ -642,7 +643,7 @@ def performance_mode(stdscr: curses.window):
 			display_files = sort_list_by_numbering_system(performance_files, True)
 			selected_files = True
 		elif index == 2:
-			folder_path = select_directory(file_manager.get_user_data_dir() + "/patches", "Select a folder", False)
+			folder_path = select_directory(file_manager.get_patch_directory(), "Select a folder", False)
 			if folder_path == "":
 				continue
 			performance_files = select_options_multiple(

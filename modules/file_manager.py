@@ -1,4 +1,5 @@
 import os.path
+from os.path import join as path_join
 
 import platformdirs
 
@@ -6,15 +7,14 @@ import platformdirs
 def get_user_data_dir() -> str:
     return platformdirs.user_data_dir("MIDI-Controller", "mm4096")
 
-
 def get_file_path(file_name) -> str:
-    return get_user_data_dir() + "/" + file_name
+    return path_join(get_user_data_dir(), file_name)
 
 def get_patch_directory() -> str:
-    return get_user_data_dir() + "/" + "patches"
+    return path_join(get_user_data_dir(), "patches")
 
 def get_config_directory() -> str:
-    return get_user_data_dir() + "/" + "presets"
+    return path_join(get_user_data_dir(), "patches")
 
 
 def write_data(data: str, file_path: str):
