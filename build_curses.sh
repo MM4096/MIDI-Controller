@@ -3,5 +3,5 @@
 # activate venv
 source .venv/bin/activate
 
-pyinstaller --onefile main.py --hidden-import mido.backends.rtmidi
-mv -f dist/main dist/MIDI-Controller-curses-linux
+pyinstaller --onefile curses_main.py --hidden-import mido.backends.rtmidi
+mv -f dist/curses_main dist/MIDI-Controller-curses-linux
