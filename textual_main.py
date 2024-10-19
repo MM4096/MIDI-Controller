@@ -806,6 +806,7 @@ class MainScreen(Screen):
 		elif event.button.id == "patch_config":
 			app.push_screen("patch_config_main")
 
+
 	def compose(self) -> ComposeResult:
 		yield Header()
 		yield Footer()
