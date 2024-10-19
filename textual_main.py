@@ -820,6 +820,8 @@ class MainScreen(Screen):
 			app.push_screen("performance")
 		elif event.button.id == "patch_config":
 			app.push_screen("patch_config_main")
+		elif event.button.id == "exit":
+			app.exit()
 
 
 	def compose(self) -> ComposeResult:
@@ -831,6 +833,7 @@ class MainScreen(Screen):
 			Button("Patch/Config Editing", id="patch_config"),
 			Button("Performance", id="performance"),
 			Button("Settings", id="settings"),
+			Button("Exit", id="exit")
 		)
 
 
