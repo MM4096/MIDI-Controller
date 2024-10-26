@@ -4,6 +4,7 @@ import os
 import time
 from os.path import join as path_join
 from pathlib import PosixPath
+from time import struct_time, localtime
 
 import mido
 from textual import on
@@ -18,7 +19,7 @@ from modules import preferences, patcher
 from modules.commands import OutputType
 from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
-	is_int
+	is_int, convert_float_to_string
 
 import time
 
@@ -369,30 +370,32 @@ class PerformanceScreen(Screen):
 	def compose(self) -> ComposeResult:
 		yield Header()
 		yield Footer()
-		yield Horizontal(
-			Vertical(
-				Label("Time", classes="h1", id="current_time"),
-				Label("Current Patch: 0 Testtest", classes="h1", id="current_patch"),
-				VerticalScroll(
-					id="patch_list",
-				),
-				Select(
-					[(self.files[i].replace(file_manager.get_patch_directory() + "/", ""), i) for i in
-					 range(len(self.files))],
-					allow_blank=False,
-					id="select_files",
-				),
-			),
-			Vertical(
+		yield Vertical(
+			Label("", classes="h1", id="current_time"),
+			Horizontal(
 				Vertical(
-					id="patch_comments"
+					Label("Current Patch: 0 Testtest", classes="h1", id="current_patch"),
+					VerticalScroll(
+						id="patch_list",
+					),
+					Select(
+						[(self.files[i].replace(file_manager.get_patch_directory() + "/", ""), i) for i in
+						 range(len(self.files))],
+						allow_blank=False,
+						id="select_files",
+					),
 				),
 				Vertical(
-					id="patch_info"
+					Vertical(
+						id="patch_comments"
+					),
+					Vertical(
+						id="patch_info"
+					),
+					id="info_container",
 				),
-				id="info_container",
+				id="performance_screen",
 			),
-			id="performance_screen",
 		)
 
 	def on_button_pressed(self, event: Button.Pressed):
@@ -412,6 +415,7 @@ class PerformanceScreen(Screen):
 	def on_mount(self) -> None:
 		self.update()
 		self.set_interval(0.1, self.check_pedal_queue)
+		self.set_interval(1, self.update_time)
 
 	def update(self):
 		current_file = self.files[self.current_file_index]
@@ -548,6 +552,14 @@ class PerformanceScreen(Screen):
 		if self.process is not None:
 			self.process.kill()
 			self.process.join()
+
+	def update_time(self):
+		if preferences.get_preference_value("show_time_in_performance"):
+			current_time: struct_time = localtime()
+			self.query_one("#current_time").update(f"{convert_float_to_string(current_time.tm_hour, 2)}:{convert_float_to_string(current_time.tm_min, 2)}:{convert_float_to_string(current_time.tm_sec, 2)}")
+
+		else:
+			self.query_one("#current_time").update("")
 
 	def on_select_changed(self, changed: Select.Changed):
 		# print(changed.value)

@@ -1,5 +1,6 @@
 import os
 import re
+from math import floor
 
 
 def clamp(_n: float, _min: float, _max: float) -> float:
@@ -139,3 +140,13 @@ def sort_list_by_numbering_system(str_list: list, return_only_filenames: bool = 
         for x in sorted_files]
     recomposed_directories = [f"{dirnames[i]}/{recomposed_files[i]}" for i in range(len(recomposed_files))]
     return recomposed_files if return_only_filenames else recomposed_directories
+
+def convert_float_to_string(number: float, length: int = -1) -> str:
+    int_part = floor(number)
+    len_int = len(str(int_part))
+    str_float = str(number)
+    for i in range(length - len_int):
+        str_float = "0" + str_float
+
+    return str_float
+

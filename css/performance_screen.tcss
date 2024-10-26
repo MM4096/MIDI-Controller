@@ -31,5 +31,12 @@
 }
 
 #current_time {
+	padding: 0;
+	margin: 0;
+}
+
+#current_patch {
+	padding: 0;
+	margin: 0;
 	border: thick black 80%;
 }

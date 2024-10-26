@@ -106,6 +106,8 @@ initial_preferences = [
               "Whether the program should accept commands from `commands.txt`"),
     Preference("do_output_file", bool, True,
                "Whether output from the program should be written to `output.txt`"),
+    Preference("show_time_in_performance", bool, False,
+               "Should a clock be shown in Performance Mode?"),
 ]
 
 
