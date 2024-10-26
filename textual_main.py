@@ -20,6 +20,8 @@ from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
 	is_int
 
+import time
+
 
 #region helper functions
 def create_needed_files():
@@ -369,6 +371,7 @@ class PerformanceScreen(Screen):
 		yield Footer()
 		yield Horizontal(
 			Vertical(
+				Label("Time", classes="h1", id="current_time"),
 				Label("Current Patch: 0 Testtest", classes="h1", id="current_patch"),
 				VerticalScroll(
 					id="patch_list",
@@ -930,6 +933,7 @@ if __name__ == "__main__":
 	observer_process.start()
 
 	app.run()
+	print("App Stopped! Stopping any subprocesses (Press `CTRL + C` to force quit)")
 
 	observer_process.terminate()
 	observer_process.join()

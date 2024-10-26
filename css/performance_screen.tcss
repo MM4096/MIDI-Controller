@@ -29,3 +29,7 @@
 	border: thick black 80%;
 	background: $surface-lighten-1;
 }
+
+#current_time {
+	border: thick black 80%;
+}

@@ -803,13 +803,13 @@ def performance_mode(stdscr: curses.window):
 					command_text: str = "Entering a command..."
 
 					if split[0] == "goto":
-						command_text = "[goto]: Go to the first file that matches the selector"
+						command_text = "[goto]: Go to the first file that matches the input"
 					elif split[0] == "exit":
 						command_text = "[exit]: Exit performance mode"
 					elif split[0] == "next":
 						command_text = "[next]: Go to the next file in the list"
 					elif split[0] == "prev":
-						command_text = "[exit]: Go to the previous file in the list"
+						command_text = "[prev]: Go to the previous file in the list"
 
 					new_window.erase()
 					new_window.addstr(f"{command_text}\n")

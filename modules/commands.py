@@ -1,7 +1,9 @@
 from enum import Enum
 
-import file_manager
 from os.path import join as path_join
+
+from modules import file_manager
+
 
 class OutputType(Enum):
 	PERFORMANCE_STARTED = 0,
@@ -24,6 +26,9 @@ def add_to_output(text: str) -> None:
 
 def send_message(message_type: OutputType, contents: list | str = ""):
 	message_name: str = ""
+	if isinstance(contents, list):
+		for index, item in enumerate(contents):
+			contents[index] = str(item)
 	if message_type == OutputType.PERFORMANCE_STARTED:
 		message_name = "performance_started"
 	elif message_type == OutputType.PERFORMANCE_PATCH_CHANGED:
