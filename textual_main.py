@@ -212,7 +212,7 @@ class SelectMidiPortScreen(ModalScreen[str]):
 		yield Vertical(
 			Label("Select MIDI Port", classes="h1"),
 			VerticalScroll(
-				*[Button(port, id=f"port_{index}") for index, port in enumerate(mido.get_input_names())],
+				*[Button(port, classes=f"port_{index}") for index, port in enumerate(mido.get_input_names())],
 				id="midi_ports",
 			),
 			Horizontal(
