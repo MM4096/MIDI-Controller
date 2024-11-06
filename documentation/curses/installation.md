@@ -10,11 +10,11 @@ Download the `MIDI-Controller-curses-linux` file, and place it in a directory of
 
 In a terminal, navigate to the directory with the executable in it, and run the following command:
 ```bash
-./MIDI-CONTROLLER-linux
+./MIDI-CONTROLLER-curses-linux
 ```
 If this doesn't work, you may need to run the following command:
 ```bash
-chmod +x ./MIDI-CONTROLLER-linux
+chmod +x ./MIDI-CONTROLLER-curses-linux
 ```
 **NOTE:** You need to run the executable from the terminal, as it will not work if you double-click it. `sudo` is not needed to run this program.
 
@@ -27,9 +27,9 @@ Then, activate the virtual environment with the following command:
 ```bash
 source .venv/bin/activate
 ```
-The main file is `curses_main.py`, and can be run with the following command:
+The main file is `main.py`, and can be run with the following command:
 ```bash
-python3 MIDI-Controller-linux.py
+python3 main.py
 ```
 
 ## Pre-requisites

@@ -86,11 +86,11 @@ initial_preferences = [
                "If the patch file is updated during Performance Mode, should the list be"
                " updated in real-time?"),
     Preference("use_emacs_text_editor_for_inputs", bool, False,
-               "Whether to use an EMACS-style text editor for input prompts"),
+               "[CURSES ONLY] Whether to use an EMACS-style text editor for input prompts"),
     Preference("skip_performance_mode_info", bool, False,
                "Skip information on how to use performance mode [NOT RECOMMENDED FOR NEWER USERS]"),
     Preference("linux_editor_command", str, "nano",
-               "[LINUX ONLY] command to for text editor (default: nano, example: gedit)"),
+               "[LINUX & CURSES ONLY] command to for text editor (default: nano, example: gedit)"),
     Preference("default_preset", str, "",
                "Specify the default preset to load on patch create. Leave blank for nothing"),
     Preference("only_require_one_press_for_next_patch", bool, False,
@@ -106,6 +106,8 @@ initial_preferences = [
               "Whether the program should accept commands from `commands.txt`"),
     Preference("do_output_file", bool, True,
                "Whether output from the program should be written to `output.txt`"),
+    Preference("run_file_observer", bool, True,
+               "Should the file observer for commands be run? Requires a restart if changed."),
     Preference("show_time_in_performance", bool, False,
                "Should a clock be shown in Performance Mode?"),
 ]

@@ -62,10 +62,10 @@ class OrderableListWidget(Static):
 
 	def compose(self) -> ComposeResult:
 		yield Vertical(
-			ListView(
+			ListView (
 				id="orderable_list",
 			),
-			Horizontal(
+			Horizontal (
 				Button("Move Up", id="move_up"),
 				Button("Move Down", id="move_down"),
 				Button("Delete", id="delete"),
@@ -371,7 +371,7 @@ class PerformanceScreen(Screen):
 							  json.dumps([file_manager.remove_patch_directory_from_patch(i) for i in self.files]))
 
 	def compose(self) -> ComposeResult:
-		# yield Header()
+		yield Header()
 		yield Footer()
 		yield Vertical(
 			Label("", classes="h1", id="current_time"),
@@ -624,12 +624,12 @@ class PerformanceSetupScreen(Screen):
 		self.orderable_list = OrderableListWidget([])
 		yield Vertical(
 			Label("Performance Screen", classes="h1"),
-			Horizontal(
+			Horizontal (
 				Button("Add File", id="add_file"),
 				Button("Add Folder", id="add_folder"),
 			),
 			self.orderable_list,
-			Horizontal(
+			Horizontal (
 				Button("Sort Items", id="sort_items"),
 				Button("Back to Menu", id="back_to_menu"),
 				Button("Start Performance", id="start_performance"),
@@ -778,7 +778,7 @@ class PatchConfigEditingMainScreen(Screen):
 		elif event.button.id == "create":
 			self.app.push_screen(FileSelectionScreen(
 				file_manager.get_patch_directory() if self.query_one("Select").value == "Create Patch"
-				else file_manager.get_config_directory(), select_files=False,
+					else file_manager.get_config_directory(), select_files=False,
 				window_title="Select folder to place patch in"), self.file_selected_create)
 		elif event.button.id == "edit":
 			self.app.push_screen(FileSelectionScreen(file_manager.get_user_data_dir(), select_files=True),
@@ -808,8 +808,6 @@ class PatchConfigEditingMainScreen(Screen):
 				return
 			patcher.write_data(json.dumps({}), full_path)
 		self.app.push_screen(PatchConfigEditingScreen(full_path))
-
-
 #endregion
 
 
@@ -909,6 +907,8 @@ class MainApp(App):
 def run_observer():
 	cached_lines = []
 	while True:
+		if not preferences.get_preference_value("do_command_file_listener"):
+			continue
 		if os.path.exists(file_manager.get_file_path("commands.txt")):
 			with open(file_manager.get_file_path("commands.txt"), "r") as f:
 				lines = f.readlines()
@@ -937,8 +937,6 @@ def run_observer():
 			cached_lines = []
 
 		time.sleep(0.1)
-
-
 #endregion
 
 if __name__ == "__main__":
@@ -948,12 +946,15 @@ if __name__ == "__main__":
 	command_manager = multiprocessing.Manager()
 	command_queue = command_manager.Queue()
 	observer_process = multiprocessing.Process(target=run_observer)
-	observer_process.start()
+	if preferences.get_preference_value("run_file_observer"):
+		observer_process.start()
 
 	app.run()
 	print("App Stopped! Stopping any subprocesses (Press `CTRL + C` to force quit)")
 
-	observer_process.terminate()
-	observer_process.join()
+
+	if preferences.get_preference_value("run_file_observer"):
+		observer_process.terminate()
+		observer_process.join()
 
 	commands.send_message(OutputType.PERFORMANCE_ENDED)
