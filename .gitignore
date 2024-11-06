@@ -7,3 +7,9 @@ curses_main.spec
 textual_main.spec
 tests/
 tests/*
+.venv/
+.venv/*
+.idea/
+.idea/*
+__pycache__/
+__pycache__/*
