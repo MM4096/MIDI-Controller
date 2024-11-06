@@ -8,6 +8,7 @@ from modules.preferences import get_preference, get_preference_value
 class Command(Enum):
     WRITE_FILE = 0,
     OPEN_DIRECTORY = 1,
+    CLEAR_SCREEN = 2,
 
 
 def run_command(command_type: Command, args):
@@ -18,13 +19,14 @@ def run_command(command_type: Command, args):
             command_str = f"/win_nano/nano.exe {args}"
         elif command_type == Command.OPEN_DIRECTORY:
             command_str = f"start {args}"
+        elif command_type == Command.CLEAR_SCREEN:
+            command_str = "cls"
     elif os_type == Platform.LINUX:
         if command_type == Command.WRITE_FILE:
-            if get_preference_value("linux_use_gedit_as_text_editor"):
-                command_str = f"gedit {args}"
-            else:
-                command_str = f"nano {args}"
+            command_str = f"{get_preference_value('linux_editor_command')} {args}"
         elif command_type == Command.OPEN_DIRECTORY:
             command_str = f"xdg-open {args}"
+        elif command_type == Command.CLEAR_SCREEN:
+            command_str = "clear"
 
     return os.system(command_str)

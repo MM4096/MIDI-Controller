@@ -568,6 +568,18 @@ def patch_editing_page(stdscr: curses.window):
 		elif index == 2:
 			break
 
+def preferences_page(stdscr: curses.window):
+	while True:
+		options = ["Edit with external program", "Back"]
+		index, option = select_options(options, "Editing Preferences", ">", 0)
+		stdscr.erase()
+		if index == 0:
+			run_command(Command.WRITE_FILE, file_manager.get_file_path("preferences"))
+			stdscr.clear()
+			stdscr.refresh()
+		elif index == 1:
+			break
+
 
 def performance_mode(stdscr: curses.window):
 	performance_files = []
@@ -859,7 +871,7 @@ def menu(stdscr: curses.window):
 
 	while True:
 		stdscr.refresh()
-		options = ["Select MIDI port", "Performance Mode", "Open program data", "Patch/Config editing", "Exit"]
+		options = ["Select MIDI port", "Performance Mode", "Open program data", "Patch/Config editing", "Settings", "Exit"]
 		index, option = select_options(options,
 									   "Welcome to MIDI-CONTROLLER!\nWhat would you like to do?", ">", 0)
 		stdscr.erase()
@@ -872,6 +884,8 @@ def menu(stdscr: curses.window):
 		elif index == 3:
 			patch_editing_page(stdscr)
 		elif index == 4:
+			preferences_page(stdscr)
+		elif index == 5:
 			break
 
 
@@ -879,4 +893,5 @@ if __name__ == "__main__":
 	try:
 		wrapper(menu)
 	except KeyboardInterrupt:
+		run_command(Command.CLEAR_SCREEN, [])
 		exit(0)

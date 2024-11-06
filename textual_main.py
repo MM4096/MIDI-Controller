@@ -653,7 +653,8 @@ class PatchConfigEditingScreen(Screen):
 			self.patch_list = patch["patch_list"]["list"]
 
 			# if is empty file, then populate with preset
-			if self.patch_list == {} and self.config == {}:
+			print(f"Patch list: {self.patch_list}, Config: {self.config}")
+			if self.patch_list == [] and self.config == {}:
 				if preferences.get_preference_value("default_preset") != "":
 					self.config["preset"] = preferences.get_preference_value("default_preset")
 		else:

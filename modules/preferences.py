@@ -24,7 +24,7 @@ class Preference:
 			self.value = self.get_initial_value(variable_type)
 		self.description = description
 
-	def toJSON(self):
+	def to_json(self):
 		return {
 			"preference_name": self.preference_name,
 			"value": self.value,
@@ -41,7 +41,7 @@ class Preference:
 		result = []
 		for i in preference_array:
 			if isinstance(i, Preference):
-				result.append(i.toJSON())
+				result.append(i.to_json())
 		return result
 
 	@staticmethod
@@ -88,13 +88,13 @@ initial_preferences = [
 	Preference("use_emacs_text_editor_for_inputs", bool, False,
 			   "[CURSES ONLY] Whether to use an EMACS-style text editor for input prompts"),
 	Preference("skip_performance_mode_info", bool, False,
-			   "Skip information on how to use performance mode [NOT RECOMMENDED FOR NEWER USERS]"),
+			   "[CURSES ONLY] Skip information on how to use performance mode [NOT RECOMMENDED FOR NEWER USERS]"),
 	Preference("linux_editor_command", str, "nano",
 			   "[LINUX & CURSES ONLY] command to for text editor (default: nano, example: gedit)"),
 	Preference("default_preset", str, "",
 			   "Specify the default preset to load on patch create. Leave blank for nothing"),
 	Preference("only_require_one_press_for_next_patch", bool, False,
-			   "Only require one [NEXT] press to go to the next patch in Performance Mode? (default is 2)"),
+			   "[CURSES ONLY] Only require one [NEXT] press to go to the next patch in Performance Mode? (default is 2)"),
 	Preference("allow_backtracking_in_performance_mode", bool, False,
 			   "Allow moving back a patch in Performance Mode with the [BEFORE] key?"),
 	Preference("loop_performance_mode", bool, False,
@@ -103,13 +103,13 @@ initial_preferences = [
 	Preference("switch_pedal_sensitivity", int, 10,
 			   "The sensitivity of the switch pedal (1 - 100, default is 10)"),
 	Preference("do_command_file_listener", bool, True,
-			   "Whether the program should accept commands from `commands.txt`"),
+			   "[TEXTUAL ONLY] Whether the program should accept commands from `commands.txt`"),
 	Preference("do_output_file", bool, True,
-			   "Whether output from the program should be written to `output.txt`"),
+			   "[TEXTUAL ONLY] Whether output from the program should be written to `output.txt`"),
 	Preference("run_file_observer", bool, True,
-			   "Should the file observer for commands be run? Requires a restart if changed."),
+			   "[TEXTUAL ONLY] Should the file observer for commands be run? Requires a restart if changed."),
 	Preference("show_time_in_performance", bool, False,
-			   "Should a clock be shown in Performance Mode?"),
+			   "[TEXTUAL ONLY] Should a clock be shown in Performance Mode?"),
 ]
 
 
