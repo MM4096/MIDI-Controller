@@ -3,3 +3,7 @@ build/*
 /build/*
 /build/
 /build/main/
+curses_main.spec
+textual_main.spec
+tests/
+tests/*
