@@ -1,12 +1,15 @@
 import json
 import multiprocessing
 import os
-import time
 from os.path import join as path_join
 from pathlib import PosixPath
+import time
 from time import struct_time, localtime
 
 import mido
+import rtmidi
+from rtmidi import MidiIn
+from rtmidi.midiutil import open_midioutput, open_midiinput
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll
@@ -17,11 +20,13 @@ from textual.widgets import Header, Footer, Static, Label, Button, Input, ListVi
 from modules import file_manager, commands
 from modules import preferences, patcher
 from modules.commands import OutputType
+from modules.midi_controller import get_all_outputs, MidiOutWrapper
 from modules.patcher import parse_preset
 from modules.tools import is_recognized_boolean, convert_string_to_boolean, sort_list_by_numbering_system, clampi, \
 	is_int, convert_float_to_string
 
-import time
+midi_output: rtmidi.MidiOut
+midi_input: rtmidi.MidiIn
 
 
 #region helper functions
@@ -45,7 +50,7 @@ def get_main_port():
 #endregion
 
 
-class OrderableListWidget(Static):
+class OrderListWidget(Static):
 	BINDINGS = [
 		("plus", "move_item_up", "Move Selected Item Up"),
 		("minus", "move_item_down", "Move Selected Item Down"),
@@ -62,10 +67,10 @@ class OrderableListWidget(Static):
 
 	def compose(self) -> ComposeResult:
 		yield Vertical(
-			ListView (
+			ListView(
 				id="orderable_list",
 			),
-			Horizontal (
+			Horizontal(
 				Button("Move Up", id="move_up"),
 				Button("Move Down", id="move_down"),
 				Button("Delete", id="delete"),
@@ -178,20 +183,16 @@ class PopupScreen(Screen[bool]):
 class SelectMidiPortScreen(ModalScreen[str]):
 	CSS_PATH = "css/select_midi_port.tcss"
 
-	def __init__(self, midi_ports: list):
+	def __init__(self):
 		super().__init__()
-		self.midi_ports = midi_ports
+		self.midi_ports: list[str] = get_all_outputs()
 		self.selected_port = ""
 
 	def on_button_pressed(self, event: Button.Pressed) -> None:
-		print(event.button.classes)
 		if event.button.id == "close_popup":
 			self.dismiss("")
-		elif event.button.id == "submit_popup":
-			if self.selected_port != "":
-				self.dismiss(self.selected_port)
 		elif event.button.id == "refresh_popup":
-			self.midi_ports = mido.get_input_names()
+			self.midi_ports = get_all_outputs()
 			list_view = self.query_one("#midi_ports")
 			if isinstance(list_view, VerticalScroll):
 				list_view.remove_children()
@@ -200,9 +201,13 @@ class SelectMidiPortScreen(ModalScreen[str]):
 		else:
 			for i in event.button.classes:
 				if "port_" in i:
-					port: int = int(i.replace("port_", ""))
+					port_id: int = int(i.replace("port_", ""))
 					try:
-						self.dismiss(mido.get_input_names()[port])
+						global midi_output, midi_input
+						this_port: str = self.midi_ports[port_id]
+						midi_output, name = open_midioutput(this_port)
+						midi_input, name = open_midiinput(this_port)
+						self.dismiss(this_port)
 					except IndexError:
 						self.app.push_screen(ErrorScreen(f"Specified port not found! Did you disconnect it?"))
 
@@ -212,13 +217,12 @@ class SelectMidiPortScreen(ModalScreen[str]):
 		yield Vertical(
 			Label("Select MIDI Port", classes="h1"),
 			VerticalScroll(
-				*[Button(port, classes=f"port_{index}") for index, port in enumerate(mido.get_input_names())],
+				*[Button(port, classes=f"port_{index}") for index, port in enumerate(get_all_outputs())],
 				id="midi_ports",
 			),
 			Horizontal(
 				Button("Close", id="close_popup"),
 				Button("Refresh", id="refresh_popup"),
-				Button("Submit", id="submit_popup"),
 				id="midi_port_buttons",
 			),
 			id="midi_port_dialog",
@@ -352,15 +356,22 @@ class PerformanceScreen(Screen):
 
 	CSS_PATH = "css/performance_screen.tcss"
 
-	def __init__(self, files: list, midi_port: str):
+	def __init__(self, files: list, port: str):
 		super().__init__()
+
+		try:
+			self.midi_wrapper = MidiOutWrapper(midi_output, 0)
+		except Exception as e:
+			app.push_screen(ErrorScreen(str(e)))
+
 		self.files = files
-		self.midi_port = midi_port
 		self.current_file_index = 0
 		self.current_patch_index = 0
 		self.process = None
 		self.pedal_event = multiprocessing.Event()
 		self.pedal_queue = multiprocessing.Queue()
+
+		self.midi_port = port
 
 		self.cached_patch_index = -1
 		self.cached_file_index = -1
@@ -371,7 +382,6 @@ class PerformanceScreen(Screen):
 							  json.dumps([file_manager.remove_patch_directory_from_patch(i) for i in self.files]))
 
 	def compose(self) -> ComposeResult:
-		yield Header()
 		yield Footer()
 		yield Vertical(
 			Label("", classes="h1", id="current_time"),
@@ -433,8 +443,7 @@ class PerformanceScreen(Screen):
 		next_patch_name = patcher.parse_patch_from_file(next_file_path)["patch_name"]
 
 		try:
-			with mido.open_output(self.midi_port) as outport:
-				outport.send(mido.Message("program_change", program=this_int_patch_list[self.current_patch_index]))
+			self.midi_wrapper.send_program_change(this_int_patch_list[self.current_patch_index])
 		except Exception as e:
 			self.app.push_screen(ErrorScreen(str(e)))
 
@@ -470,13 +479,15 @@ class PerformanceScreen(Screen):
 		self.kill_pedal_signal()
 
 		self.pedal_event.clear()
+		print(self.midi_port)
 		self.process = multiprocessing.Process(target=self.wait_for_switch_pedal,
 											   args=(self.midi_port, self.pedal_event, self.pedal_queue))
 		self.process.start()
 
 		if self.cached_file_index != self.current_file_index:
 			commands.send_message(OutputType.PERFORMANCE_FILE_CHANGED,
-								  [self.current_file_index, json.dumps([i["sound"] for i in this_patch_list]), json.dumps(this_comment_list)])
+								  [self.current_file_index, json.dumps([i["sound"] for i in this_patch_list]),
+								   json.dumps(this_comment_list)])
 			self.cached_patch_index = -1
 
 			select = self.query_one("#select_files")
@@ -533,13 +544,31 @@ class PerformanceScreen(Screen):
 		self.current_patch_index = 0
 		self.update()
 
-	def wait_for_switch_pedal(self, port: str, event, queue: multiprocessing.Queue):
-		with mido.open_input(port) as inport:
-			for msg in inport:
-				if event.is_set():
-					return
-				if msg.type == "control_change" and msg.control == 82 and msg.value > int(
-						preferences.get_preference_value("switch_pedal_sensitivity")):
+	def wait_for_switch_pedal(self, port: str, event: multiprocessing.Event, queue: multiprocessing.Queue):
+		# with mido.open_input(port) as inport:
+		# 	for msg in inport:
+		# 		if event.is_set():
+		# 			return
+		# 		if msg.type == "control_change" and msg.control == 82 and msg.value > int(
+		# 				preferences.get_preference_value("switch_pedal_sensitivity")):
+		# 			queue.put("pedal_down")
+		# 			return
+		this_inport: MidiIn
+		for index, value in enumerate(get_all_outputs()):
+			if value == port:
+				this_inport = open_midiinput(value)
+		try:
+			this_inport
+		except NameError:
+			return
+
+		while True:
+			if event.is_set():
+				return
+			msg = this_inport.get_message()
+			if msg:
+				message, _ = msg
+				if message[0] == 176 and message[1] == 82 and message[2] > int(preferences.get_preference_value("switch_pedal_sensitivity")):
 					queue.put("pedal_down")
 					return
 
@@ -559,7 +588,8 @@ class PerformanceScreen(Screen):
 	def update_time(self):
 		if preferences.get_preference_value("show_time_in_performance"):
 			current_time: struct_time = localtime()
-			self.query_one("#current_time").update(f"{convert_float_to_string(current_time.tm_hour, 2)}:{convert_float_to_string(current_time.tm_min, 2)}:{convert_float_to_string(current_time.tm_sec, 2)}")
+			self.query_one("#current_time").update(
+				f"{convert_float_to_string(current_time.tm_hour, 2)}:{convert_float_to_string(current_time.tm_min, 2)}:{convert_float_to_string(current_time.tm_sec, 2)}")
 
 		else:
 			self.query_one("#current_time").update("")
@@ -580,7 +610,7 @@ class PerformanceScreen(Screen):
 class PerformanceSetupScreen(Screen):
 	CSS_PATH = "css/performance.tcss"
 
-	orderable_list: OrderableListWidget = None
+	orderable_list: OrderListWidget = None
 
 	def on_button_pressed(self, event: Button.Pressed) -> None:
 		if event.button.id == "back_to_menu":
@@ -598,7 +628,7 @@ class PerformanceSetupScreen(Screen):
 			if len(self.orderable_list.list_items) == 0:
 				self.app.push_screen(ErrorScreen("No patches selected. Please select some patches to perform."))
 				return
-			self.app.push_screen(SelectMidiPortScreen(mido.get_input_names()), self.selected_midi_port)
+			self.app.push_screen(SelectMidiPortScreen(), self.selected_midi_port)
 
 	def selected_midi_port(self, port: str):
 		if port == "": return
@@ -621,15 +651,15 @@ class PerformanceSetupScreen(Screen):
 	def compose(self) -> ComposeResult:
 		yield Header()
 		yield Footer()
-		self.orderable_list = OrderableListWidget([])
+		self.orderable_list = OrderListWidget([])
 		yield Vertical(
 			Label("Performance Screen", classes="h1"),
-			Horizontal (
+			Horizontal(
 				Button("Add File", id="add_file"),
 				Button("Add Folder", id="add_folder"),
 			),
 			self.orderable_list,
-			Horizontal (
+			Horizontal(
 				Button("Sort Items", id="sort_items"),
 				Button("Back to Menu", id="back_to_menu"),
 				Button("Start Performance", id="start_performance"),
@@ -779,7 +809,7 @@ class PatchConfigEditingMainScreen(Screen):
 		elif event.button.id == "create":
 			self.app.push_screen(FileSelectionScreen(
 				file_manager.get_patch_directory() if self.query_one("Select").value == "Create Patch"
-					else file_manager.get_config_directory(), select_files=False,
+				else file_manager.get_config_directory(), select_files=False,
 				window_title="Select folder to place patch in"), self.file_selected_create)
 		elif event.button.id == "edit":
 			self.app.push_screen(FileSelectionScreen(file_manager.get_user_data_dir(), select_files=True),
@@ -809,6 +839,8 @@ class PatchConfigEditingMainScreen(Screen):
 				return
 			patcher.write_data(json.dumps({}), full_path)
 		self.app.push_screen(PatchConfigEditingScreen(full_path))
+
+
 #endregion
 
 
@@ -825,7 +857,6 @@ class MainScreen(Screen):
 		elif event.button.id == "exit":
 			app.exit()
 
-
 	def compose(self) -> ComposeResult:
 		yield Header()
 		yield Footer()
@@ -835,7 +866,7 @@ class MainScreen(Screen):
 			Button("Patch/Config Editing", id="patch_config"),
 			Button("Performance", id="performance"),
 			Button("Settings", id="settings"),
-            Button("Exit", id="exit"),
+			Button("Exit", id="exit"),
 		)
 
 
@@ -938,6 +969,8 @@ def run_observer():
 			cached_lines = []
 
 		time.sleep(0.1)
+
+
 #endregion
 
 if __name__ == "__main__":
@@ -951,8 +984,16 @@ if __name__ == "__main__":
 		observer_process.start()
 
 	app.run()
-	print("App Stopped! Stopping any subprocesses (Press `CTRL + C` to force quit)")
+	print("App Stopped! Stopping any subprocesses as gracefully as possible (Press `CTRL + C` to force quit)")
 
+	try:
+		del midi_output
+	except NameError:
+		print("NOT AN ERROR: No midi output to delete!")
+	try:
+		del midi_input
+	except NameError:
+		print("NOT AN ERROR: No midi input to delete!")
 
 	if preferences.get_preference_value("run_file_observer"):
 		observer_process.terminate()

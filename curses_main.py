@@ -11,7 +11,7 @@ import mido
 import mido.backends.rtmidi
 
 from modules import file_manager, preferences, tools, patcher
-from modules.command import run_command, Command
+from modules.internal_commands import run_command, Command
 from modules.tools import sort_list_by_numbering_system
 
 # region colors
@@ -59,7 +59,7 @@ def create_needed_files():
 	file_manager.create_dir_if_not_exists(file_manager.get_user_data_dir())
 	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "patches"))
 	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "presets"))
-	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(),  "temp"))
+	file_manager.create_dir_if_not_exists(path_join(file_manager.get_user_data_dir(), "temp"))
 	new_preferences = preferences.update_preferences()
 
 
@@ -67,7 +67,8 @@ def wait_for_switch_pedal(port: str, event):
 	global pedal_pressed
 	with (mido.open_input(port) as inport):
 		for msg in inport:
-			if msg.type == "control_change" and msg.control == 82 and msg.value > int(preferences.get_preference_value("switch_pedal_sensitivity")):
+			if msg.type == "control_change" and msg.control == 82 and msg.value > int(
+					preferences.get_preference_value("switch_pedal_sensitivity")):
 				event.set()
 				return
 
@@ -568,6 +569,7 @@ def patch_editing_page(stdscr: curses.window):
 		elif index == 2:
 			break
 
+
 def preferences_page(stdscr: curses.window):
 	while True:
 		options = ["Edit with external program", "Back"]
@@ -685,7 +687,7 @@ def performance_mode(stdscr: curses.window):
 
 		if first_run_through:
 			first_run_through = False
-			# put functions to run only on the first time here...
+		# put functions to run only on the first time here...
 
 		if cached_index != current_patch_index or cached_file_index != current_file_index:
 			cached_index = current_patch_index
@@ -728,7 +730,7 @@ def performance_mode(stdscr: curses.window):
 			stdscr.addstr("\n\n\n")
 			stdscr.addstr(f"Notes:\n\n\n{this_comment_list[clamped_index]}\n")
 			stdscr.refresh()
-			# endregion
+		# endregion
 
 		direction = 0
 		global pedal_pressed
@@ -809,7 +811,6 @@ def performance_mode(stdscr: curses.window):
 
 						_stop = True
 
-
 					split_command = current_command[1:]
 					split = split_command.split(" ")
 					command_text: str = "Entering a command..."
@@ -830,7 +831,6 @@ def performance_mode(stdscr: curses.window):
 				new_window.clear()
 				new_window.refresh()
 				break
-
 
 		if pedal_event.is_set():
 			direction = 1
@@ -871,7 +871,8 @@ def menu(stdscr: curses.window):
 
 	while True:
 		stdscr.refresh()
-		options = ["Select MIDI port", "Performance Mode", "Open program data", "Patch/Config editing", "Settings", "Exit"]
+		options = ["Select MIDI port", "Performance Mode", "Open program data", "Patch/Config editing", "Settings",
+				   "Exit"]
 		index, option = select_options(options,
 									   "Welcome to MIDI-CONTROLLER!\nWhat would you like to do?", ">", 0)
 		stdscr.erase()

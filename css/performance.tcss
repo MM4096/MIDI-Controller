@@ -10,12 +10,12 @@ Button {
 	margin-bottom: 2;
 }
 
-OrderableListWidget {
+OrderListWidget {
 	margin-top: 1;
 	height: 75%;
 }
 
-OrderableListWidget ListItem {
+OrderListWidget ListItem {
 	padding: 1;
 	margin-top: 1;
 }
