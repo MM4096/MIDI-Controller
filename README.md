@@ -2,7 +2,7 @@
 ## Overview
 This is a project I started due to a lack of proper resources for creating patch lists for my Korg Kross 2 on Ubuntu.
 
-This program is a command-line interface (CLI) program, built with Python, using the `mido` library for midi control, and the `curses` library for terminal styling.
+This program is a command-line interface (CLI) program, built with Python, using the `mido` library for midi control, and the `textual` (or `curses`) library for terminal styling.
 
 ## Ports
 There are two ports to this program: `curses` and `textual`.
