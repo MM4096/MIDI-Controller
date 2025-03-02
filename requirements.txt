@@ -3,3 +3,4 @@ platformdirs~=4.2.2
 rich~=13.8.0
 textual~=0.79.1
 watchdog~=5.0.2
+python-rtmidi~=1.5.8
